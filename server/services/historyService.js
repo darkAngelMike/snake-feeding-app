@@ -13,14 +13,14 @@ async function saveFeeding(data) {
 
   const { error } = await supabase.from("feedings").insert([
     {
-      feedingDate,
+      feedingdate: feedingDate,
       weight,
       stage,
-      mealWeight,
-      nextFeedingDate,
-      isOverdue,
-      daysLeft,
-      savedAt: new Date().toISOString(),
+      mealweight: mealWeight,
+      nextfeedingdate: nextFeedingDate,
+      isoverdue: isOverdue,
+      daysleft: daysLeft,
+      savedat: new Date().toISOString(),
     },
   ]);
 
