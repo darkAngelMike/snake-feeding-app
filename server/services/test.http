@@ -1,0 +1,8 @@
+POST http://localhost:3000/calculate
+Content-Type: application/json
+
+{
+  "feedingDate": "2024-04-20",
+  "weight": 500,
+  "stage": "adult"
+}
