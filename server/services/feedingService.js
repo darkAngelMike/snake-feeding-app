@@ -1,7 +1,6 @@
 function calculateFeeding(data) {
   const { feedingDate, weight, stage } = data;
 
-  // 🔥 WALIDACJA
   if (!feedingDate || !weight) {
     throw new Error("Brak wymaganych danych: feedingDate, weight");
   }
@@ -16,7 +15,6 @@ function calculateFeeding(data) {
     throw new Error("Waga musi być dodatnią liczbą");
   }
 
-  // 🔥 LOGIKA
   const feedingIntervalDays = 21;
   const mealPercentage = 0.09;
 
@@ -31,6 +29,11 @@ function calculateFeeding(data) {
   const diffTime = nextFeedingDate - today;
   const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
+  const overdueDiffTime = today - nextFeedingDate;
+  const daysOverdue = isOverdue
+    ? Math.ceil(overdueDiffTime / (1000 * 60 * 60 * 24))
+    : 0;
+
   return {
     message: "Obliczono plan karmienia",
     input: {
@@ -41,9 +44,10 @@ function calculateFeeding(data) {
     result: {
       feedingIntervalDays,
       mealWeight,
-      nextFeedingDate: nextFeedingDate.toISOString().split('T')[0],
+      nextFeedingDate: nextFeedingDate.toISOString().split("T")[0],
       isOverdue,
       daysLeft,
+      daysOverdue,
     },
   };
 }
