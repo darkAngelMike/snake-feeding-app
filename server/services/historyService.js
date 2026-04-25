@@ -1,58 +1,35 @@
-const db = require("../db");
+const fs = require("fs");
+
+const FILE_PATH = "./data.json";
 
 function saveFeeding(data) {
-  const {
-    feedingDate,
-    weight,
-    stage,
-    mealWeight,
-    nextFeedingDate,
-    isOverdue,
-    daysLeft
-  } = data;
+  let existingData = [];
 
-  db.run(
-    `
-    INSERT INTO feedings (
-      feedingDate,
-      weight,
-      stage,
-      mealWeight,
-      nextFeedingDate,
-      isOverdue,
-      daysLeft,
-      savedAt
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `,
-    [
-      feedingDate,
-      weight,
-      stage,
-      mealWeight,
-      nextFeedingDate,
-      isOverdue,
-      daysLeft,
-      new Date().toISOString()
-    ]
-  );
+  if (fs.existsSync(FILE_PATH)) {
+    const fileContent = fs.readFileSync(FILE_PATH);
+    existingData = JSON.parse(fileContent);
+  }
 
-  return { message: "Zapisano karmienie do DB" };
+  existingData.push({
+    ...data,
+    savedAt: new Date().toISOString(),
+  });
+
+  fs.writeFileSync(FILE_PATH, JSON.stringify(existingData, null, 2));
+
+  return { message: "Zapisano karmienie" };
 }
 
 function getHistory() {
-  return new Promise((resolve, reject) => {
-    db.all("SELECT * FROM feedings ORDER BY id DESC", (err, rows) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(rows);
-      }
-    });
-  });
+  if (!fs.existsSync(FILE_PATH)) {
+    return [];
+  }
+
+  const fileContent = fs.readFileSync(FILE_PATH);
+  return JSON.parse(fileContent);
 }
 
 module.exports = {
   saveFeeding,
-  getHistory
+  getHistory,
 };
