@@ -54,7 +54,6 @@ function App() {
     }
 
     setProfile(data);
-    setResult(null); // 🔥 reset wyniku po zmianie profilu
     setWeight(data.weight || "");
     setStage(data.stage || "adult");
     setLastFeedingDate(data.last_feeding_date || "");
@@ -127,7 +126,6 @@ function App() {
       return;
     }
 
-    setResult(null); // 🔥 reset wyniku po zmianie danych
     fetchProfile();
   };
 
@@ -298,7 +296,7 @@ function App() {
 
           {result.isOverdue ? (
             <p style={{ color: "red", fontWeight: "bold" }}>
-              ⚠️ Dni po terminie: {result.daysOverdue}
+              ⚠️ Dni po terminie: {result.daysOverdue ?? "?"}
             </p>
           ) : (
             <p>Dni do karmienia: {result.daysLeft}</p>
