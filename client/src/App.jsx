@@ -149,6 +149,7 @@ function App() {
     setResult(data.result);
   };
 
+  // 🔐 LOGIN
   if (!session) {
     return (
       <div style={{ padding: "40px", textAlign: "center" }}>
@@ -185,10 +186,12 @@ function App() {
     );
   }
 
+  // ⏳ LOADING
   if (loading) {
     return <p style={{ textAlign: "center" }}>Ładowanie...</p>;
   }
 
+  // 🐍 BRAK PROFILU
   if (!profile) {
     return (
       <div style={{ padding: "40px", textAlign: "center" }}>
@@ -209,12 +212,12 @@ function App() {
 
         <br />
         <br />
-
         <button onClick={logout}>Wyloguj</button>
       </div>
     );
   }
 
+  // 🧠 DASHBOARD
   return (
     <div style={{ padding: "40px", textAlign: "center" }}>
       <h1>Witaj, {profile.name} 🐍</h1>
@@ -290,7 +293,14 @@ function App() {
           <p>Porcja: {result.mealWeight} g</p>
           <p>Następne karmienie: {result.nextFeedingDate}</p>
           <p>Czy po terminie: {result.isOverdue ? "Tak" : "Nie"}</p>
-          <p>Dni do karmienia: {result.daysLeft}</p>
+
+          {result.isOverdue ? (
+            <p style={{ color: "red", fontWeight: "bold" }}>
+              ⚠️ Dni po terminie: {result.daysOverdue}
+            </p>
+          ) : (
+            <p>Dni do karmienia: {result.daysLeft}</p>
+          )}
         </div>
       )}
 
