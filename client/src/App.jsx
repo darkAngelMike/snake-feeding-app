@@ -22,6 +22,8 @@ function App() {
   const [feedingSnakeWeight, setFeedingSnakeWeight] = useState("");
   const [mealWeight, setMealWeight] = useState("");
 
+  const [history, setHistory] = useState([]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -45,6 +47,12 @@ function App() {
     }
   }, [session]);
 
+  useEffect(() => {
+    if (profile) {
+      fetchHistory();
+    }
+  }, [profile]);
+
   const fetchProfile = async () => {
     const { data, error } = await supabase
       .from("snake_profiles")
@@ -64,6 +72,21 @@ function App() {
     setLastFeedingDate(data.last_feeding_date || "");
     setBodyCondition(data.body_condition || "normal");
     setLoading(false);
+  };
+
+  const fetchHistory = async () => {
+    const { data, error } = await supabase
+      .from("feedings")
+      .select("*")
+      .eq("snake_id", profile.id)
+      .order("feeding_date", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setHistory(data);
   };
 
   const getFakeEmail = () => `${nick}@snake.local`;
@@ -123,7 +146,7 @@ function App() {
 
   const updateProfile = async () => {
     if (!weight || !lastFeedingDate) {
-      alert("Uzupełnij wagę i datę ostatniego karmienia");
+      alert("Uzupełnij dane");
       return;
     }
 
@@ -169,7 +192,7 @@ function App() {
 
   const saveFeeding = async () => {
     if (!feedingDate || !feedingSnakeWeight || !mealWeight) {
-      alert("Uzupełnij dane karmienia");
+      alert("Uzupełnij dane");
       return;
     }
 
@@ -186,7 +209,7 @@ function App() {
 
     if (error) {
       console.error(error);
-      alert("Błąd zapisu karmienia");
+      alert("Błąd zapisu");
       return;
     }
 
@@ -198,7 +221,7 @@ function App() {
       })
       .eq("id", profile.id);
 
-    alert("Karmienie zapisane 🐍");
+    alert("Zapisano 🐍");
 
     setFeedingDate("");
     setFeedingSnakeWeight("");
@@ -206,92 +229,67 @@ function App() {
     setResult(null);
 
     fetchProfile();
+    fetchHistory();
   };
 
   const isProfileComplete = profile?.weight && profile?.last_feeding_date;
 
-  if (loading) {
-    return <p style={{ textAlign: "center" }}>Ładowanie...</p>;
-  }
+  if (loading) return <p>Ładowanie...</p>;
 
   if (!session) {
     return (
-      <div style={{ padding: "40px", textAlign: "center" }}>
+      <div style={{ textAlign: "center", padding: "40px" }}>
         <h1>🐍 Tyson Snake App 🥊</h1>
-        <p>Ten wąż nie pyta... ten wąż gryzie pierwszy.</p>
 
-        <label>Nick:</label>
-        <br />
-        <input value={nick} onChange={(e) => setNick(e.target.value)} />
-
-        <br />
-        <br />
-
-        <label>Hasło:</label>
+        <input
+          placeholder="nick"
+          value={nick}
+          onChange={(e) => setNick(e.target.value)}
+        />
         <br />
         <input
           type="password"
+          placeholder="hasło"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
         <br />
         <br />
-
-        <button onClick={login}>Zaloguj</button>
-        <button onClick={register} style={{ marginLeft: "10px" }}>
-          Zarejestruj
-        </button>
+        <button onClick={login}>Login</button>
+        <button onClick={register}>Register</button>
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div style={{ padding: "40px", textAlign: "center" }}>
-        <h1>Nazwij swojego węża 🐍</h1>
-
-        <label>Imię węża:</label>
-        <br />
+      <div style={{ textAlign: "center" }}>
+        <h1>Nazwij węża</h1>
         <input
-          placeholder="np. Tyson"
           value={snakeName}
           onChange={(e) => setSnakeName(e.target.value)}
         />
-
         <br />
         <br />
-
-        <button onClick={createSnakeProfile}>Stwórz profil</button>
-
-        <br />
-        <br />
-
-        <button onClick={logout}>Wyloguj</button>
+        <button onClick={createSnakeProfile}>OK</button>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: "40px", textAlign: "center" }}>
-      <h1>Witaj, {profile.name} 🐍</h1>
+    <div style={{ textAlign: "center", padding: "40px" }}>
+      <h1>{profile.name}</h1>
 
       {!isProfileComplete && (
-        <div>
-          <p>Uzupełnij dane {profile.name}, aby obliczyć datę karmienia</p>
+        <>
+          <p>Uzupełnij profil</p>
 
-          <label>Waga węża (g):</label>
-          <br />
           <input
-            type="number"
+            placeholder="waga"
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
           />
-
-          <br />
-          <br />
-
-          <label>Data ostatniego karmienia:</label>
           <br />
           <input
             type="date"
@@ -301,103 +299,88 @@ function App() {
 
           <br />
           <br />
-
-          <label>Etap:</label>
-          <br />
-          <select value={stage} onChange={(e) => setStage(e.target.value)}>
-            <option value="young">Young</option>
-            <option value="adult">Adult</option>
-          </select>
-
-          <br />
-          <br />
-
-          <label>Kondycja:</label>
-          <br />
-          <select
-            value={bodyCondition}
-            onChange={(e) => setBodyCondition(e.target.value)}
-          >
-            <option value="underweight">Za chudy</option>
-            <option value="normal">Normalny</option>
-            <option value="overweight">Za gruby</option>
-          </select>
-
-          <br />
-          <br />
-
-          <button onClick={updateProfile}>Zapisz profil</button>
-        </div>
+          <button onClick={updateProfile}>Zapisz</button>
+        </>
       )}
 
       {isProfileComplete && (
-        <div>
-          <p>Dane kompletne — możesz liczyć karmienie</p>
-
-          <button onClick={calculateFeeding}>Oblicz datę karmienia</button>
+        <>
+          <button onClick={calculateFeeding}>Oblicz</button>
 
           {result && (
-            <div style={{ marginTop: "20px" }}>
-              <h2>Wynik</h2>
-              <p>Porcja: {result.mealWeight} g</p>
-              <p>Następne karmienie: {result.nextFeedingDate}</p>
-              <p>Czy po terminie: {result.isOverdue ? "Tak" : "Nie"}</p>
+            <div>
+              <p>{result.mealWeight} g</p>
+              <p>{result.nextFeedingDate}</p>
 
               {result.isOverdue ? (
-                <p style={{ color: "red", fontWeight: "bold" }}>
-                  ⚠️ Dni po terminie: {result.daysOverdue}
+                <p style={{ color: "red" }}>
+                  {result.daysOverdue} dni po terminie
                 </p>
               ) : (
-                <p>Dni do karmienia: {result.daysLeft}</p>
+                <p>{result.daysLeft} dni</p>
               )}
+            </div>
+          )}
 
-              <hr />
+          {result && (
+            <>
+              <h3>Karmienie</h3>
 
-              <h2>Zarejestruj karmienie</h2>
-
-              <label>Data karmienia:</label>
-              <br />
               <input
                 type="date"
                 value={feedingDate}
                 onChange={(e) => setFeedingDate(e.target.value)}
               />
-
-              <br />
-              <br />
-
-              <label>Aktualna waga węża (g):</label>
               <br />
               <input
-                type="number"
+                placeholder="waga węża"
                 value={feedingSnakeWeight}
                 onChange={(e) => setFeedingSnakeWeight(e.target.value)}
               />
-
-              <br />
-              <br />
-
-              <label>Waga pokarmu (g):</label>
               <br />
               <input
-                type="number"
+                placeholder="waga pokarmu"
                 value={mealWeight}
                 onChange={(e) => setMealWeight(e.target.value)}
               />
 
               <br />
-              <br />
-
-              <button onClick={saveFeeding}>Zapisz karmienie</button>
-            </div>
+              <button onClick={saveFeeding}>Zapisz</button>
+            </>
           )}
-        </div>
+
+          <hr />
+
+          <h3>Historia</h3>
+
+          {history.length === 0 ? (
+            <p>Brak danych</p>
+          ) : (
+            <table border="1" style={{ margin: "0 auto" }}>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Waga</th>
+                  <th>Pokarm</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((h) => (
+                  <tr key={h.id}>
+                    <td>{h.feeding_date}</td>
+                    <td>{h.snake_weight}</td>
+                    <td>{h.meal_weight}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
       )}
 
       <br />
       <br />
-
-      <button onClick={logout}>Wyloguj</button>
+      <button onClick={logout}>Logout</button>
     </div>
   );
 }
