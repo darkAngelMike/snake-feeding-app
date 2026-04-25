@@ -54,6 +54,7 @@ function App() {
     }
 
     setProfile(data);
+    setResult(null); // 🔥 reset wyniku po zmianie profilu
     setWeight(data.weight || "");
     setStage(data.stage || "adult");
     setLastFeedingDate(data.last_feeding_date || "");
@@ -126,6 +127,7 @@ function App() {
       return;
     }
 
+    setResult(null); // 🔥 reset wyniku po zmianie danych
     fetchProfile();
   };
 
