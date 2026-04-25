@@ -10,17 +10,20 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const response = await fetch("https://snake-backend-kb14.onrender.com/calculate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      "https://snake-backend-kb14.onrender.com/calculate",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          feedingDate,
+          weight: Number(weight),
+          stage,
+        }),
       },
-      body: JSON.stringify({
-        feedingDate,
-        weight: Number(weight),
-        stage,
-      }),
-    });
+    );
 
     const data = await response.json();
     setResult(data.result);
@@ -28,7 +31,9 @@ function App() {
   };
 
   const fetchHistory = async () => {
-    const response = await fetch("https://snake-backend-kb14.onrender.com/history");
+    const response = await fetch(
+      "https://snake-backend-kb14.onrender.com/history",
+    );
     const data = await response.json();
     setHistory(data);
   };
@@ -104,11 +109,11 @@ function App() {
             <tbody>
               {history.map((item, index) => (
                 <tr key={index}>
-                  <td>{item.feedingDate}</td>
+                  <td>{item.feedingdate}</td>
                   <td>{item.weight} g</td>
-                  <td>{item.mealWeight} g</td>
-                  <td>{item.nextFeedingDate}</td>
-                  <td>{item.isOverdue ? "🔴 Po terminie" : "🟢 OK"}</td>
+                  <td>{item.mealweight} g</td>
+                  <td>{item.nextfeedingdate}</td>
+                  <td>{item.isoverdue ? "🔴 Po terminie" : "🟢 OK"}</td>
                 </tr>
               ))}
             </tbody>
