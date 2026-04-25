@@ -11,6 +11,11 @@ function App() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [weight, setWeight] = useState("");
+  const [stage, setStage] = useState("adult");
+  const [lastFeedingDate, setLastFeedingDate] = useState("");
+  const [bodyCondition, setBodyCondition] = useState("normal");
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -19,7 +24,7 @@ function App() {
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-      }
+      },
     );
 
     return () => {
@@ -47,6 +52,10 @@ function App() {
     }
 
     setProfile(data);
+    setWeight(data.weight || "");
+    setStage(data.stage || "adult");
+    setLastFeedingDate(data.last_feeding_date || "");
+    setBodyCondition(data.body_condition || "normal");
     setLoading(false);
   };
 
@@ -72,7 +81,6 @@ function App() {
 
     if (error) {
       alert(error.message);
-      return;
     }
   };
 
@@ -97,22 +105,46 @@ function App() {
     fetchProfile();
   };
 
-  // 🔥 NIEZALOGOWANY
+  const updateProfile = async () => {
+    const { error } = await supabase
+      .from("snake_profiles")
+      .update({
+        weight: Number(weight),
+        stage,
+        last_feeding_date: lastFeedingDate,
+        body_condition: bodyCondition,
+      })
+      .eq("id", profile.id);
+
+    if (error) {
+      console.error(error);
+      alert("Błąd update profilu");
+      return;
+    }
+
+    fetchProfile();
+  };
+
   if (!session) {
     return (
       <div style={{ padding: "40px", textAlign: "center" }}>
         <h1>🐍 Tyson Snake App 🥊</h1>
         <p>Ten wąż nie pyta... ten wąż gryzie pierwszy.</p>
 
+        <label>Email:</label>
+        <br />
         <input
           type="email"
-          placeholder="Email"
+          placeholder="email@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        <br /><br />
+        <br />
+        <br />
 
+        <label>Hasło:</label>
+        <br />
         <input
           type="password"
           placeholder="Hasło"
@@ -120,7 +152,8 @@ function App() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <br /><br />
+        <br />
+        <br />
 
         <button onClick={login}>Zaloguj</button>
         <button onClick={register} style={{ marginLeft: "10px" }}>
@@ -130,54 +163,105 @@ function App() {
     );
   }
 
-  // 🔄 ŁADOWANIE
   if (loading) {
     return <p style={{ textAlign: "center" }}>Ładowanie...</p>;
   }
 
-  // 🐍 BRAK PROFILU
   if (!profile) {
     return (
       <div style={{ padding: "40px", textAlign: "center" }}>
         <h1>Nazwij swojego węża 🐍</h1>
 
+        <label>Imię węża:</label>
+        <br />
         <input
-          placeholder="Imię węża (np. Tyson)"
+          placeholder="np. Tyson"
           value={snakeName}
           onChange={(e) => setSnakeName(e.target.value)}
         />
 
-        <br /><br />
+        <br />
+        <br />
 
-        <button onClick={createSnakeProfile}>
-          Stwórz profil
-        </button>
+        <button onClick={createSnakeProfile}>Stwórz profil</button>
 
-        <br /><br />
+        <br />
+        <br />
+
         <button onClick={logout}>Wyloguj</button>
       </div>
     );
   }
 
-  // 🧠 DASHBOARD
   return (
     <div style={{ padding: "40px", textAlign: "center" }}>
       <h1>Witaj, {profile.name} 🐍</h1>
 
-      {!profile.weight ? (
-        <p>
-          Uzupełnij dane {profile.name}, aby obliczyć datę karmienia
-        </p>
+      {!profile.weight || !profile.last_feeding_date ? (
+        <div>
+          <p>Uzupełnij dane {profile.name}, aby obliczyć datę karmienia</p>
+
+          <label>Waga węża (g):</label>
+          <br />
+          <input
+            type="number"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+          />
+
+          <br />
+          <br />
+
+          <label>Data ostatniego karmienia:</label>
+          <br />
+          <input
+            type="date"
+            value={lastFeedingDate}
+            onChange={(e) => setLastFeedingDate(e.target.value)}
+          />
+
+          <br />
+          <br />
+
+          <label>Etap:</label>
+          <br />
+          <select value={stage} onChange={(e) => setStage(e.target.value)}>
+            <option value="young">Young</option>
+            <option value="adult">Adult</option>
+          </select>
+
+          <br />
+          <br />
+
+          <label>Kondycja:</label>
+          <br />
+          <select
+            value={bodyCondition}
+            onChange={(e) => setBodyCondition(e.target.value)}
+          >
+            <option value="underweight">Za chudy</option>
+            <option value="normal">Normalny</option>
+            <option value="overweight">Za gruby</option>
+          </select>
+
+          <br />
+          <br />
+
+          <button onClick={updateProfile}>Zapisz dane</button>
+        </div>
       ) : (
         <p>Dane kompletne — możesz liczyć karmienie</p>
       )}
 
       <br />
-      <button disabled={!profile.weight}>
+
+      <button disabled={!profile.weight || !profile.last_feeding_date}>
         Oblicz datę karmienia
       </button>
 
-      <br /><br />
+      <br />
+      <br />
+
       <button onClick={logout}>Wyloguj</button>
     </div>
   );
