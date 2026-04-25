@@ -3,14 +3,15 @@ import { supabase } from "./supabaseClient";
 
 function App() {
   const [session, setSession] = useState(null);
+  const [view, setView] = useState("dashboard");
+  const [loading, setLoading] = useState(true);
 
   const [nick, setNick] = useState("");
   const [password, setPassword] = useState("");
 
-  const [snakeName, setSnakeName] = useState("");
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
 
+  const [snakeName, setSnakeName] = useState("");
   const [weight, setWeight] = useState("");
   const [stage, setStage] = useState("adult");
   const [lastFeedingDate, setLastFeedingDate] = useState("");
@@ -21,6 +22,7 @@ function App() {
   const [feedingDate, setFeedingDate] = useState("");
   const [feedingSnakeWeight, setFeedingSnakeWeight] = useState("");
   const [mealWeight, setMealWeight] = useState("");
+  const [feedingSaved, setFeedingSaved] = useState(false);
 
   const [history, setHistory] = useState([]);
 
@@ -31,14 +33,10 @@ function App() {
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-      },
+      (_event, session) => setSession(session),
     );
 
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -53,41 +51,8 @@ function App() {
     }
   }, [profile]);
 
-  const fetchProfile = async () => {
-    const { data, error } = await supabase
-      .from("snake_profiles")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .single();
-
-    if (error) {
-      setProfile(null);
-      setLoading(false);
-      return;
-    }
-
-    setProfile(data);
-    setWeight(data.weight || "");
-    setStage(data.stage || "adult");
-    setLastFeedingDate(data.last_feeding_date || "");
-    setBodyCondition(data.body_condition || "normal");
-    setLoading(false);
-  };
-
-  const fetchHistory = async () => {
-    const { data, error } = await supabase
-      .from("feedings")
-      .select("*")
-      .eq("snake_id", profile.id)
-      .order("feeding_date", { ascending: false });
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    setHistory(data);
-  };
+  const isProfileComplete =
+    profile?.name && profile?.weight && profile?.last_feeding_date;
 
   const getFakeEmail = () => `${nick}@snake.local`;
 
@@ -97,11 +62,7 @@ function App() {
       password,
     });
 
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
+    if (error) return alert(error.message);
     alert("Konto utworzone");
   };
 
@@ -111,63 +72,72 @@ function App() {
       password,
     });
 
-    if (error) {
-      alert(error.message);
-    }
+    if (error) return alert(error.message);
   };
 
   const logout = async () => {
     await supabase.auth.signOut();
+    setSession(null);
     setProfile(null);
     setResult(null);
+    setView("dashboard");
   };
 
-  const createSnakeProfile = async () => {
-    if (!snakeName) {
-      alert("Podaj imię węża");
-      return;
-    }
-
-    const { error } = await supabase.from("snake_profiles").insert([
-      {
-        user_id: session.user.id,
-        name: snakeName,
-      },
-    ]);
-
-    if (error) {
-      console.error(error);
-      alert("Błąd tworzenia profilu");
-      return;
-    }
-
-    fetchProfile();
-  };
-
-  const updateProfile = async () => {
-    if (!weight || !lastFeedingDate) {
-      alert("Uzupełnij dane");
-      return;
-    }
-
-    const { error } = await supabase
+  const fetchProfile = async () => {
+    const { data, error } = await supabase
       .from("snake_profiles")
-      .update({
-        weight: Number(weight),
-        stage,
-        last_feeding_date: lastFeedingDate,
-        body_condition: bodyCondition,
-      })
-      .eq("id", profile.id);
+      .select("*")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
 
     if (error) {
       console.error(error);
-      alert("Błąd update profilu");
+      setProfile(null);
+      return;
+    }
+
+    setProfile(data);
+
+    if (data) {
+      setSnakeName(data.name || "");
+      setWeight(data.weight || "");
+      setStage(data.stage || "adult");
+      setLastFeedingDate(data.last_feeding_date || "");
+      setBodyCondition(data.body_condition || "normal");
+    }
+  };
+
+  const saveProfile = async () => {
+    if (!snakeName || !weight || !lastFeedingDate) {
+      alert("Uzupełnij imię, wagę i datę ostatniego karmienia");
+      return;
+    }
+
+    const payload = {
+      user_id: session.user.id,
+      name: snakeName,
+      weight: Number(weight),
+      stage,
+      last_feeding_date: lastFeedingDate,
+      body_condition: bodyCondition,
+    };
+
+    const { error } = profile
+      ? await supabase
+          .from("snake_profiles")
+          .update(payload)
+          .eq("id", profile.id)
+      : await supabase.from("snake_profiles").insert([payload]);
+
+    if (error) {
+      console.error(error);
+      alert("Błąd zapisu profilu");
       return;
     }
 
     setResult(null);
-    fetchProfile();
+    await fetchProfile();
+    setView("dashboard");
   };
 
   const calculateFeeding = async () => {
@@ -192,7 +162,7 @@ function App() {
 
   const saveFeeding = async () => {
     if (!feedingDate || !feedingSnakeWeight || !mealWeight) {
-      alert("Uzupełnij dane");
+      alert("Uzupełnij datę karmienia, wagę węża i wagę pokarmu");
       return;
     }
 
@@ -209,7 +179,7 @@ function App() {
 
     if (error) {
       console.error(error);
-      alert("Błąd zapisu");
+      alert("Błąd zapisu karmienia");
       return;
     }
 
@@ -221,167 +191,283 @@ function App() {
       })
       .eq("id", profile.id);
 
-    alert("Zapisano 🐍");
-
+    setFeedingSaved(true);
+    setResult(null);
     setFeedingDate("");
     setFeedingSnakeWeight("");
     setMealWeight("");
-    setResult(null);
 
-    fetchProfile();
-    fetchHistory();
+    await fetchProfile();
+    await fetchHistory();
   };
 
-  const isProfileComplete = profile?.weight && profile?.last_feeding_date;
+  const fetchHistory = async () => {
+    if (!profile?.id) return;
 
-  if (loading) return <p>Ładowanie...</p>;
+    const { data, error } = await supabase
+      .from("feedings")
+      .select("*")
+      .eq("snake_id", profile.id)
+      .order("feeding_date", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setHistory(data || []);
+  };
+
+  if (loading) return <p style={{ textAlign: "center" }}>Ładowanie...</p>;
 
   if (!session) {
     return (
-      <div style={{ textAlign: "center", padding: "40px" }}>
+      <main style={{ padding: 40, textAlign: "center" }}>
         <h1>🐍 Tyson Snake App 🥊</h1>
+        <p>Ten wąż nie pyta. Ten wąż planuje karmienie.</p>
 
-        <input
-          placeholder="nick"
-          value={nick}
-          onChange={(e) => setNick(e.target.value)}
-        />
+        <label>Nick</label>
+        <br />
+        <input value={nick} onChange={(e) => setNick(e.target.value)} />
+
+        <br />
+        <br />
+
+        <label>Hasło</label>
         <br />
         <input
           type="password"
-          placeholder="hasło"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
         <br />
         <br />
-        <button onClick={login}>Login</button>
-        <button onClick={register}>Register</button>
-      </div>
+
+        <button onClick={login}>Zaloguj</button>
+        <button onClick={register} style={{ marginLeft: 10 }}>
+          Zarejestruj
+        </button>
+      </main>
     );
   }
 
-  if (!profile) {
+  if (!isProfileComplete || view === "profile") {
     return (
-      <div style={{ textAlign: "center" }}>
-        <h1>Nazwij węża</h1>
+      <main style={{ padding: 40, textAlign: "center" }}>
+        <h1>Profil węża 🐍</h1>
+        <p>Uzupełnij dane potrzebne do wyliczenia karmienia.</p>
+
+        <label>Imię węża</label>
+        <br />
         <input
           value={snakeName}
           onChange={(e) => setSnakeName(e.target.value)}
         />
+
         <br />
         <br />
-        <button onClick={createSnakeProfile}>OK</button>
-      </div>
+
+        <label>Waga węża (g)</label>
+        <br />
+        <input
+          type="number"
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
+        />
+
+        <br />
+        <br />
+
+        <label>Data ostatniego karmienia</label>
+        <br />
+        <input
+          type="date"
+          value={lastFeedingDate}
+          onChange={(e) => setLastFeedingDate(e.target.value)}
+        />
+
+        <br />
+        <br />
+
+        <label>Etap</label>
+        <br />
+        <select value={stage} onChange={(e) => setStage(e.target.value)}>
+          <option value="young">Young</option>
+          <option value="adult">Adult</option>
+        </select>
+
+        <br />
+        <br />
+
+        <label>Kondycja</label>
+        <br />
+        <select
+          value={bodyCondition}
+          onChange={(e) => setBodyCondition(e.target.value)}
+        >
+          <option value="underweight">Za chudy</option>
+          <option value="normal">Normalny</option>
+          <option value="overweight">Za gruby</option>
+        </select>
+
+        <br />
+        <br />
+
+        <button onClick={saveProfile}>Zapisz profil</button>
+
+        {isProfileComplete && (
+          <button
+            onClick={() => setView("dashboard")}
+            style={{ marginLeft: 10 }}
+          >
+            Wróć
+          </button>
+        )}
+
+        <br />
+        <br />
+        <button onClick={logout}>Wyloguj</button>
+      </main>
+    );
+  }
+
+  if (view === "registerFeeding") {
+    return (
+      <main style={{ padding: 40, textAlign: "center" }}>
+        <h1>Zarejestruj karmienie 🐁</h1>
+
+        <label>Data karmienia</label>
+        <br />
+        <input
+          type="date"
+          value={feedingDate}
+          onChange={(e) => setFeedingDate(e.target.value)}
+        />
+
+        <br />
+        <br />
+
+        <label>Aktualna waga węża (g)</label>
+        <br />
+        <input
+          type="number"
+          value={feedingSnakeWeight}
+          onChange={(e) => setFeedingSnakeWeight(e.target.value)}
+        />
+
+        <br />
+        <br />
+
+        <label>Waga pokarmu (g)</label>
+        <br />
+        <input
+          type="number"
+          value={mealWeight}
+          onChange={(e) => setMealWeight(e.target.value)}
+        />
+
+        <br />
+        <br />
+
+        <button onClick={saveFeeding}>Zapisz karmienie</button>
+        <button onClick={() => setView("dashboard")} style={{ marginLeft: 10 }}>
+          Wróć
+        </button>
+
+        {feedingSaved && (
+          <div style={{ marginTop: 20 }}>
+            <p>Karmienie zapisane 🐍</p>
+            <button onClick={() => setView("history")}>
+              Historia karmienia
+            </button>
+          </div>
+        )}
+      </main>
+    );
+  }
+
+  if (view === "history") {
+    return (
+      <main style={{ padding: 40, textAlign: "center" }}>
+        <h1>Historia karmienia 📜</h1>
+
+        {history.length === 0 ? (
+          <p>Brak danych</p>
+        ) : (
+          <table border="1" cellPadding="8" style={{ margin: "0 auto" }}>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Waga węża</th>
+                <th>Waga pokarmu</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.feeding_date}</td>
+                  <td>{item.snake_weight} g</td>
+                  <td>{item.meal_weight} g</td>
+                  <td>{item.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        <br />
+        <button onClick={() => setView("dashboard")}>Wróć</button>
+      </main>
     );
   }
 
   return (
-    <div style={{ textAlign: "center", padding: "40px" }}>
-      <h1>{profile.name}</h1>
+    <main style={{ padding: 40, textAlign: "center" }}>
+      <div style={{ textAlign: "right" }}>
+        <button onClick={() => setView("profile")}>Profil węża</button>
+        <button onClick={logout} style={{ marginLeft: 10 }}>
+          Wyloguj
+        </button>
+      </div>
 
-      {!isProfileComplete && (
-        <>
-          <p>Uzupełnij profil</p>
+      <h1>Witaj, {profile.name} 🐍</h1>
+      <p>Dane kompletne — możesz liczyć karmienie.</p>
 
-          <input
-            placeholder="waga"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-          />
-          <br />
-          <input
-            type="date"
-            value={lastFeedingDate}
-            onChange={(e) => setLastFeedingDate(e.target.value)}
-          />
+      <button onClick={calculateFeeding}>Oblicz datę karmienia</button>
 
-          <br />
-          <br />
-          <button onClick={updateProfile}>Zapisz</button>
-        </>
-      )}
+      {result && (
+        <section style={{ marginTop: 20 }}>
+          <h2>Wynik</h2>
+          <p>Rekomendowana waga pokarmu: {result.mealWeight} g</p>
+          <p>Najbliższa data karmienia: {result.nextFeedingDate}</p>
+          <p>Czy po terminie: {result.isOverdue ? "Tak" : "Nie"}</p>
 
-      {isProfileComplete && (
-        <>
-          <button onClick={calculateFeeding}>Oblicz</button>
-
-          {result && (
-            <div>
-              <p>{result.mealWeight} g</p>
-              <p>{result.nextFeedingDate}</p>
-
-              {result.isOverdue ? (
-                <p style={{ color: "red" }}>
-                  {result.daysOverdue} dni po terminie
-                </p>
-              ) : (
-                <p>{result.daysLeft} dni</p>
-              )}
-            </div>
-          )}
-
-          {result && (
-            <>
-              <h3>Karmienie</h3>
-
-              <input
-                type="date"
-                value={feedingDate}
-                onChange={(e) => setFeedingDate(e.target.value)}
-              />
-              <br />
-              <input
-                placeholder="waga węża"
-                value={feedingSnakeWeight}
-                onChange={(e) => setFeedingSnakeWeight(e.target.value)}
-              />
-              <br />
-              <input
-                placeholder="waga pokarmu"
-                value={mealWeight}
-                onChange={(e) => setMealWeight(e.target.value)}
-              />
-
-              <br />
-              <button onClick={saveFeeding}>Zapisz</button>
-            </>
-          )}
-
-          <hr />
-
-          <h3>Historia</h3>
-
-          {history.length === 0 ? (
-            <p>Brak danych</p>
+          {result.isOverdue ? (
+            <p style={{ color: "red", fontWeight: "bold" }}>
+              ⚠️ Dni po terminie: {result.daysOverdue}
+            </p>
           ) : (
-            <table border="1" style={{ margin: "0 auto" }}>
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Waga</th>
-                  <th>Pokarm</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((h) => (
-                  <tr key={h.id}>
-                    <td>{h.feeding_date}</td>
-                    <td>{h.snake_weight}</td>
-                    <td>{h.meal_weight}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <p>Dni do karmienia: {result.daysLeft}</p>
           )}
-        </>
+
+          <button onClick={() => setView("registerFeeding")}>
+            Zarejestruj karmienie
+          </button>
+        </section>
       )}
 
       <br />
       <br />
-      <button onClick={logout}>Logout</button>
-    </div>
+
+      <button onClick={() => setView("registerFeeding")}>
+        Zarejestruj karmienie
+      </button>
+      <button onClick={() => setView("history")} style={{ marginLeft: 10 }}>
+        Historia karmienia
+      </button>
+    </main>
   );
 }
 
