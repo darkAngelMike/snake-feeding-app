@@ -107,15 +107,19 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {history.map((item, index) => (
-                <tr key={index}>
-                  <td>{item.feedingdate}</td>
-                  <td>{item.weight} g</td>
-                  <td>{item.mealweight} g</td>
-                  <td>{item.nextfeedingdate}</td>
-                  <td>{item.isoverdue ? "🔴 Po terminie" : "🟢 OK"}</td>
-                </tr>
-              ))}
+              {history.map((item, index) => {
+                console.log(item); // 👈 DODAJ TO
+
+                return (
+                  <tr key={index}>
+                    <td>{item.feedingdate}</td>
+                    <td>{item.weight} g</td>
+                    <td>{item.mealweight} g</td>
+                    <td>{item.nextfeedingdate}</td>
+                    <td>{item.isoverdue ? "🔴 Po terminie" : "🟢 OK"}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
