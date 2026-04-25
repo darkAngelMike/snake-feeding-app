@@ -1,32 +1,49 @@
-const fs = require("fs");
+const supabase = require("../supabaseClient");
 
-const FILE_PATH = "./data.json";
+async function saveFeeding(data) {
+  const {
+    feedingDate,
+    weight,
+    stage,
+    mealWeight,
+    nextFeedingDate,
+    isOverdue,
+    daysLeft,
+  } = data;
 
-function saveFeeding(data) {
-  let existingData = [];
+  const { error } = await supabase.from("feedings").insert([
+    {
+      feedingDate,
+      weight,
+      stage,
+      mealWeight,
+      nextFeedingDate,
+      isOverdue,
+      daysLeft,
+      savedAt: new Date().toISOString(),
+    },
+  ]);
 
-  if (fs.existsSync(FILE_PATH)) {
-    const fileContent = fs.readFileSync(FILE_PATH);
-    existingData = JSON.parse(fileContent);
+  if (error) {
+    console.error(error);
+    throw new Error("Błąd zapisu do bazy");
   }
 
-  existingData.push({
-    ...data,
-    savedAt: new Date().toISOString(),
-  });
-
-  fs.writeFileSync(FILE_PATH, JSON.stringify(existingData, null, 2));
-
-  return { message: "Zapisano karmienie" };
+  return { message: "Zapisano do Supabase" };
 }
 
-function getHistory() {
-  if (!fs.existsSync(FILE_PATH)) {
-    return [];
+async function getHistory() {
+  const { data, error } = await supabase
+    .from("feedings")
+    .select("*")
+    .order("id", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    throw new Error("Błąd pobierania historii");
   }
 
-  const fileContent = fs.readFileSync(FILE_PATH);
-  return JSON.parse(fileContent);
+  return data;
 }
 
 module.exports = {
