@@ -4,7 +4,7 @@ import { supabase } from "./supabaseClient";
 function App() {
   const [session, setSession] = useState(null);
 
-  const [email, setEmail] = useState("");
+  const [nick, setNick] = useState("");
   const [password, setPassword] = useState("");
 
   const [snakeName, setSnakeName] = useState("");
@@ -15,6 +15,8 @@ function App() {
   const [stage, setStage] = useState("adult");
   const [lastFeedingDate, setLastFeedingDate] = useState("");
   const [bodyCondition, setBodyCondition] = useState("normal");
+
+  const [result, setResult] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -59,9 +61,11 @@ function App() {
     setLoading(false);
   };
 
+  const getFakeEmail = () => `${nick}@snake.local`;
+
   const register = async () => {
     const { error } = await supabase.auth.signUp({
-      email,
+      email: getFakeEmail(),
       password,
     });
 
@@ -75,7 +79,7 @@ function App() {
 
   const login = async () => {
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: getFakeEmail(),
       password,
     });
 
@@ -125,19 +129,38 @@ function App() {
     fetchProfile();
   };
 
+  const calculateFeeding = async () => {
+    const response = await fetch(
+      "https://snake-backend-kb14.onrender.com/calculate",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          feedingDate: profile.last_feeding_date,
+          weight: profile.weight,
+          stage: profile.stage,
+        }),
+      },
+    );
+
+    const data = await response.json();
+    setResult(data.result);
+  };
+
   if (!session) {
     return (
       <div style={{ padding: "40px", textAlign: "center" }}>
         <h1>🐍 Tyson Snake App 🥊</h1>
         <p>Ten wąż nie pyta... ten wąż gryzie pierwszy.</p>
 
-        <label>Email:</label>
+        <label>Nick:</label>
         <br />
         <input
-          type="email"
-          placeholder="email@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          placeholder="np. mike"
+          value={nick}
+          onChange={(e) => setNick(e.target.value)}
         />
 
         <br />
@@ -147,7 +170,6 @@ function App() {
         <br />
         <input
           type="password"
-          placeholder="Hasło"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -255,9 +277,22 @@ function App() {
 
       <br />
 
-      <button disabled={!profile.weight || !profile.last_feeding_date}>
+      <button
+        disabled={!profile.weight || !profile.last_feeding_date}
+        onClick={calculateFeeding}
+      >
         Oblicz datę karmienia
       </button>
+
+      {result && (
+        <div style={{ marginTop: "20px" }}>
+          <h2>Wynik</h2>
+          <p>Porcja: {result.mealWeight} g</p>
+          <p>Następne karmienie: {result.nextFeedingDate}</p>
+          <p>Czy po terminie: {result.isOverdue ? "Tak" : "Nie"}</p>
+          <p>Dni do karmienia: {result.daysLeft}</p>
+        </div>
+      )}
 
       <br />
       <br />
