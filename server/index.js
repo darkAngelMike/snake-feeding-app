@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const adminRoutes = require("./routes/adminRoutes");
 const calculationRoutes = require("./routes/calculationRoutes");
 const feedingRoutes = require("./routes/feedingRoutes");
 const snakeProfileRoutes = require("./routes/snakeProfileRoutes");
@@ -21,6 +22,7 @@ app.get("/", (_req, res) => {
   res.send("Snake app działa 🐍");
 });
 
+app.use(adminRoutes);
 app.use(calculationRoutes);
 app.use(feedingRoutes);
 app.use(snakeProfileRoutes);

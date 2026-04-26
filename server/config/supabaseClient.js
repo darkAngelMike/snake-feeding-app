@@ -1,6 +1,7 @@
 const { createClient } = require("@supabase/supabase-js");
 
 let supabaseClient;
+let serviceRoleClient;
 
 function getSupabaseConfig() {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -39,7 +40,29 @@ function createSupabaseClientForToken(accessToken) {
   });
 }
 
+function getSupabaseServiceRoleClient() {
+  if (serviceRoleClient) return serviceRoleClient;
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "Brak konfiguracji Supabase: SUPABASE_URL i SUPABASE_SERVICE_ROLE_KEY są wymagane",
+    );
+  }
+
+  serviceRoleClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+  return serviceRoleClient;
+}
+
 module.exports = {
   createSupabaseClientForToken,
   getSupabaseClient,
+  getSupabaseServiceRoleClient,
 };

@@ -140,7 +140,10 @@ async function getFeedings(req, res) {
     });
   }
 
-  return res.json((data || []).map(sanitizeFeeding));
+  return res.json({
+    success: true,
+    data: (data || []).map(sanitizeFeeding),
+  });
 }
 
 async function updateSnakeProfileAfterFeeding(feeding) {

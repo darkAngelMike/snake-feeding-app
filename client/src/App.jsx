@@ -177,20 +177,35 @@ function App() {
   };
 
   const fetchHistory = async () => {
-    if (!profile?.id) return;
+    if (!session || !profile?.id) return;
 
-    const { data, error } = await supabase
-      .from("feedings")
-      .select("*")
-      .eq("snake_id", profile.id)
-      .order("feeding_date", { ascending: false });
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/feedings?snake_id=${encodeURIComponent(profile.id)}`,
+        {
+          headers: getApiHeaders(),
+        },
+      );
 
-    if (error) {
+      const data = await parseApiResponse(response);
+
+      if (!response.ok) {
+        throw new Error(
+          getApiErrorMessage(
+            response,
+            data.error || "Nie udało się pobrać historii karmień.",
+          ),
+        );
+      }
+
+      setHistory(data.data || []);
+    } catch (error) {
       console.error(error);
-      return;
+      setHistory([]);
+      setDashboardMessage(
+        error.message || "Nie udało się pobrać historii karmień.",
+      );
     }
-
-    setHistory(data || []);
   };
 
   useEffect(() => {
@@ -259,22 +274,36 @@ function App() {
   }, [session]);
 
   useEffect(() => {
-    if (!profile?.id) return;
+    if (!session || !profile?.id) return;
 
-    supabase
-      .from("feedings")
-      .select("*")
-      .eq("snake_id", profile.id)
-      .order("feeding_date", { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error(error);
-          return;
+    fetch(`${API_BASE_URL}/feedings?snake_id=${encodeURIComponent(profile.id)}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    })
+      .then(async (response) => {
+        const data = await parseApiResponse(response);
+
+        if (!response.ok) {
+          throw new Error(
+            getApiErrorMessage(
+              response,
+              data.error || "Nie udało się pobrać historii karmień.",
+            ),
+          );
         }
 
-        setHistory(data || []);
+        setHistory(data.data || []);
+      })
+      .catch((error) => {
+        console.error(error);
+        setHistory([]);
+        setDashboardMessage(
+          error.message || "Nie udało się pobrać historii karmień.",
+        );
       });
-  }, [profile?.id]);
+  }, [profile?.id, session]);
 
   const register = async () => {
     setAuthMessage("");
@@ -488,10 +517,10 @@ function App() {
       <main className="auth-page">
         <section className="auth-hero" aria-label="Panel opiekuna węża">
           <p className="eyebrow">Panel opiekuna gada</p>
-          <h1>Opieka nad wężem</h1>
+          <h1>SerpentTrack</h1>
           <p>
-            Profesjonalny rytm karmienia, aktualna waga i historia opieki w
-            jednym czytelnym miejscu.
+            Planuj karmienia, śledź historię i monitoruj kondycję swojego
+            pytona w jednym miejscu.
           </p>
         </section>
 
@@ -576,17 +605,17 @@ function App() {
         <section className="form-card form-card--wide">
           <div className="section-heading">
             <p className="eyebrow">
-              {profile ? "Dane bazowe" : "Nie masz jeszcze profilu węża"}
+              {profile ? "Dane bazowe" : "Zacznij od profilu swojego węża"}
             </p>
             <h2>
               {profile
                 ? "Uzupełnij informacje do planowania karmienia"
-                : "Dodaj pierwszy profil węża"}
+                : "Dodaj podstawowe dane, żeby SerpentTrack mógł przygotować rekomendację karmienia."}
             </h2>
             {!profile && (
               <p className="muted">
-                Dane profilu są pobierane i zapisywane przez backend dla
-                aktualnie zalogowanego użytkownika.
+                Twoje dane są przypisane do konta i widoczne tylko po
+                zalogowaniu.
               </p>
             )}
           </div>
