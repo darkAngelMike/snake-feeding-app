@@ -118,6 +118,44 @@ function App() {
     return fallback;
   };
 
+  const getFeedingTimingLabel = () => {
+    if (!result) return "";
+    if (result.daysLeft > 0) return `Do karmienia: ${result.daysLeft} dni`;
+    if (result.daysOverdue > 0) {
+      return `Po terminie: ${result.daysOverdue} dni`;
+    }
+    if (result.daysLeft === 0) return "Karmienie dzisiaj";
+    return "";
+  };
+
+  const renderTopbarActions = (activeView) => (
+    <nav className="topbar-actions" aria-label="Akcje panelu">
+      <button
+        className={`nav-action ${activeView === "dashboard" ? "is-active" : ""}`}
+        onClick={() => setView("dashboard")}
+      >
+        Przegląd
+      </button>
+      <button
+        className={`nav-action ${
+          activeView === "registerFeeding" ? "is-active" : ""
+        }`}
+        onClick={() => setView("registerFeeding")}
+      >
+        Dodaj wpis
+      </button>
+      <button
+        className={`nav-action ${activeView === "profile" ? "is-active" : ""}`}
+        onClick={() => setView("profile")}
+      >
+        Profil
+      </button>
+      <button className="nav-action nav-action--ghost" onClick={logout}>
+        Wyloguj
+      </button>
+    </nav>
+  );
+
   const markProfileFormDirty = () => {
     profileFormDirtyRef.current = true;
   };
@@ -706,9 +744,7 @@ function App() {
             <p className="eyebrow">Konfiguracja</p>
             <h1>Profil węża</h1>
           </div>
-          <button className="button button--ghost" onClick={logout}>
-            Wyloguj
-          </button>
+          {renderTopbarActions("profile")}
         </header>
 
         <section className="form-card form-card--wide">
@@ -844,7 +880,7 @@ function App() {
             </div>
           </div>
 
-          <div className="button-row">
+          <div className="div-actions">
             <button
               className="button button--primary"
               disabled={savingProfile || profileLoading}
@@ -879,12 +915,7 @@ function App() {
             <p className="eyebrow">Dziennik opieki</p>
             <h1>Zarejestruj karmienie</h1>
           </div>
-          <button
-            className="button button--ghost"
-            onClick={() => setView("dashboard")}
-          >
-            Wróć
-          </button>
+          {renderTopbarActions("registerFeeding")}
         </header>
 
         <section className="form-card form-card--wide">
@@ -943,7 +974,7 @@ function App() {
             </div>
           </div>
 
-          <div className="button-row">
+          <div className="div-actions">
             <button
               className="button button--primary"
               disabled={savingFeeding || profileLoading}
@@ -971,12 +1002,7 @@ function App() {
             <p className="eyebrow">Historia</p>
             <h1>Karmienia</h1>
           </div>
-          <button
-            className="button button--ghost"
-            onClick={() => setView("dashboard")}
-          >
-            Wróć
-          </button>
+          {renderTopbarActions("history")}
         </header>
 
         <section className="timeline-card">
@@ -1023,17 +1049,7 @@ function App() {
           <h1>{profile.name}</h1>
         </div>
 
-        <nav className="topbar-actions" aria-label="Akcje panelu">
-          <button
-            className="button button--secondary"
-            onClick={() => setView("profile")}
-          >
-            Profil
-          </button>
-          <button className="button button--ghost" onClick={logout}>
-            Wyloguj
-          </button>
-        </nav>
+        {renderTopbarActions("dashboard")}
       </header>
 
       <section className="dashboard-grid">
@@ -1152,17 +1168,19 @@ function App() {
                 <p
                   className={
                     result.status === "overdue" ||
-                    result.status === "vet_check_recommended"
+                    result.status === "vet_check_recommended" ||
+                    result.daysOverdue > 0
                       ? "status-pill status-pill--danger"
                       : "status-pill"
                   }
                 >
-                  {result.status === "vet_check_recommended"
-                    ? "Zalecana konsultacja"
-                    : result.status === "overdue"
-                    ? `Po terminie: ${result.daysOverdue} dni`
-                    : `Do karmienia: ${result.daysLeft} dni`}
+                  {getFeedingTimingLabel()}
                 </p>
+                {result.status === "vet_check_recommended" && (
+                  <p className="status-pill status-pill--danger">
+                    Zalecana konsultacja
+                  </p>
+                )}
                 {result.warnings?.length > 0 && (
                   <ul className="warning-list">
                     {result.warnings.map((warning) => (
@@ -1181,7 +1199,7 @@ function App() {
             </p>
           )}
 
-          <div className="button-row">
+          <div className="div-actions">
             <button
               className="button button--primary"
               disabled={calculating || profileLoading}
@@ -1202,7 +1220,11 @@ function App() {
       <section className="monitor-card" aria-label="Aktywność SerpentTrack">
         <div>
           <p className="eyebrow">Aktywność opiekuna</p>
-          <h2>SerpentTrack monitoruje plan karmienia</h2>
+          <h2>
+            {result
+              ? "Plan został przeliczony na podstawie danych"
+              : "SerpentTrack monitoruje plan karmienia"}
+          </h2>
           <p>
             {result
               ? "Plan został przeliczony. Sprawdź sugerowaną datę i wagę karmówki przed zapisem kolejnego karmienia."

@@ -91,6 +91,46 @@
   gap: 10px;
 }
 
+.topbar-actions {
+  align-items: center;
+  justify-content: flex-start;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.nav-action {
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) - 2px);
+  padding: 8px 12px;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 800;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.nav-action:hover {
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+}
+
+.nav-action.is-active {
+  color: #ffffff;
+  background: var(--primary);
+  box-shadow: 0 8px 18px rgba(37, 111, 74, 0.18);
+}
+
+.nav-action--ghost {
+  color: var(--text);
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.72);
+}
+
 .section-heading {
   margin-bottom: 24px;
 }
@@ -262,6 +302,14 @@
 
 .form-card .button--primary {
   min-width: min(100%, 220px);
+}
+
+.div-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+  margin-bottom: 16px;
 }
 
 .auth-card .button-row {
@@ -592,6 +640,7 @@
   display: grid;
   gap: 18px;
   align-items: center;
+  width: 100%;
   margin-top: 20px;
   border: 1px solid rgba(37, 111, 74, 0.14);
   border-radius: var(--radius);
@@ -765,6 +814,10 @@
     justify-content: space-between;
   }
 
+  .topbar-actions {
+    justify-content: flex-end;
+  }
+
   .form-card--wide {
     max-width: 760px;
   }
@@ -792,5 +845,20 @@
 
   .monitor-card .dashboard-snake {
     justify-self: end;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar-actions,
+  .div-actions {
+    width: 100%;
+  }
+
+  .nav-action {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .div-actions .button {
+    flex: 1 1 100%;
   }
 }
