@@ -11,12 +11,16 @@ export class DashboardPage {
   }
 
   async calculateFeeding() {
-    await this.page.getByRole("button", { name: "Oblicz termin" }).click();
+    await this.page.getByTestId("dashboard-button-calculate").click();
   }
 
   async expectTimingBadgeVisible() {
+    await expect(this.page.getByTestId("dashboard-days-left")).toBeVisible();
+  }
+
+  async expectNextFeedingDateVisible() {
     await expect(
-      this.page.getByText(/Do karmienia:|Po terminie:|Karmienie dzisiaj/),
+      this.page.getByTestId("dashboard-next-feeding-date"),
     ).toBeVisible();
   }
 }

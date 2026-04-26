@@ -12,9 +12,17 @@ export class FeedingFormPage {
     snakeWeightG: number;
     mealWeightG: number;
   }) {
-    await this.page.getByLabel("Data karmienia").fill(data.feedingDate);
-    await this.page.getByLabel("Aktualna waga węża (g)").fill(String(data.snakeWeightG));
-    await this.page.getByLabel("Waga pokarmu (g)").fill(String(data.mealWeightG));
-    await this.page.getByRole("button", { name: "Zapisz karmienie" }).click();
+    await this.page.getByTestId("feeding-input-date").fill(data.feedingDate);
+    await this.page
+      .getByTestId("feeding-input-weight")
+      .fill(String(data.snakeWeightG));
+    await this.page
+      .getByTestId("feeding-input-meal")
+      .fill(String(data.mealWeightG));
+    await this.page.getByTestId("feeding-button-save").click();
+  }
+
+  async openHistory() {
+    await this.page.getByTestId("feeding-button-history").click();
   }
 }

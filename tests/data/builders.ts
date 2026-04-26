@@ -30,7 +30,7 @@ export function buildSnakeProfile(overrides: ProfileOverrides = {}) {
     current_weight_g: 1000,
     life_stage: "adult",
     body_condition: "normal",
-    last_successful_feeding_date: "2026-04-05",
+    last_successful_feeding_date: dateDaysAgo(21),
     ...overrides,
   };
 }
@@ -38,7 +38,7 @@ export function buildSnakeProfile(overrides: ProfileOverrides = {}) {
 export function buildFeeding(overrides: FeedingOverrides = {}) {
   return {
     snake_id: "replace-with-profile-id",
-    feeding_date: "2026-04-05",
+    feeding_date: dateDaysAgo(0),
     snake_weight_g: 1000,
     meal_weight_g: 100,
     status: "success",
@@ -49,7 +49,7 @@ export function buildFeeding(overrides: FeedingOverrides = {}) {
 export function buildCalculationInput(profileId: string) {
   return {
     snake_id: profileId,
-    last_successful_feeding_date: "2026-04-05",
+    last_successful_feeding_date: dateDaysAgo(21),
     weight_g: 1000,
     life_stage: "adult",
     body_condition: "normal",
@@ -57,4 +57,10 @@ export function buildCalculationInput(profileId: string) {
     is_shedding: false,
     last_meal_weight_g: 100,
   };
+}
+
+export function dateDaysAgo(days: number) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() - days);
+  return date.toISOString().slice(0, 10);
 }

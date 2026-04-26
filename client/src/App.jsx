@@ -687,6 +687,7 @@ function App() {
             <label htmlFor="nick">Nazwa użytkownika</label>
             <input
               id="nick"
+              data-testid="login-input-username"
               value={nick}
               onChange={(e) => setNick(e.target.value)}
               placeholder="Twoja nazwa"
@@ -697,6 +698,7 @@ function App() {
             <label htmlFor="password">Hasło</label>
             <input
               id="password"
+              data-testid="login-input-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -707,6 +709,7 @@ function App() {
           <div className="button-row">
             <button
               className="button button--primary"
+              data-testid="login-button-submit"
               disabled={!nick || !password}
               onClick={login}
             >
@@ -714,6 +717,7 @@ function App() {
             </button>
             <button
               className="button button--secondary"
+              data-testid="login-button-register"
               disabled={!nick || !password}
               onClick={register}
             >
@@ -776,6 +780,7 @@ function App() {
               <label htmlFor="snakeName">Imię węża</label>
               <input
                 id="snakeName"
+                data-testid="profile-input-name"
                 value={snakeName}
                 onChange={(e) => {
                   markProfileFormDirty();
@@ -789,6 +794,7 @@ function App() {
               <label htmlFor="currentWeightG">Waga węża (g)</label>
               <input
                 id="currentWeightG"
+                data-testid="profile-input-weight"
                 type="number"
                 min={MIN_SNAKE_WEIGHT_G}
                 max={MAX_SNAKE_WEIGHT_G}
@@ -842,6 +848,7 @@ function App() {
               </div>
               <select
                 id="lifeStage"
+                data-testid="profile-select-life-stage"
                 value={lifeStage}
                 className={!lifeStage ? "is-placeholder" : undefined}
                 onChange={(e) => {
@@ -861,6 +868,7 @@ function App() {
               <label htmlFor="bodyCondition">Kondycja</label>
               <select
                 id="bodyCondition"
+                data-testid="profile-select-condition"
                 value={bodyCondition}
                 className={!bodyCondition ? "is-placeholder" : undefined}
                 onChange={(e) => {
@@ -883,6 +891,7 @@ function App() {
           <div className="div-actions">
             <button
               className="button button--primary"
+              data-testid="profile-button-save"
               disabled={savingProfile || profileLoading}
               onClick={saveProfile}
             >
@@ -941,6 +950,7 @@ function App() {
               <label htmlFor="feedingDate">Data karmienia</label>
               <input
                 id="feedingDate"
+                data-testid="feeding-input-date"
                 type="date"
                 value={feedingDate}
                 onChange={(e) => setFeedingDate(e.target.value)}
@@ -951,6 +961,7 @@ function App() {
               <label htmlFor="feedingSnakeWeight">Aktualna waga węża (g)</label>
               <input
                 id="feedingSnakeWeight"
+                data-testid="feeding-input-weight"
                 type="number"
                 value={feedingSnakeWeight}
                 onChange={(e) => setFeedingSnakeWeight(e.target.value)}
@@ -962,6 +973,7 @@ function App() {
               <label htmlFor="mealWeight">Waga pokarmu (g)</label>
               <input
                 id="mealWeight"
+                data-testid="feeding-input-meal"
                 type="number"
                 value={mealWeight}
                 onChange={(e) => setMealWeight(e.target.value)}
@@ -977,6 +989,7 @@ function App() {
           <div className="div-actions">
             <button
               className="button button--primary"
+              data-testid="feeding-button-save"
               disabled={savingFeeding || profileLoading}
               onClick={saveFeeding}
             >
@@ -984,6 +997,7 @@ function App() {
             </button>
             <button
               className="button button--secondary"
+              data-testid="feeding-button-history"
               onClick={() => setView("history")}
             >
               Historia karmień
@@ -1074,6 +1088,7 @@ function App() {
               <p>Ocena wpisana ręcznie w profilu.</p>
             </div>
             <div
+              data-testid="dashboard-status-weight"
               className={`stat stat--assessment stat--${weightAssessment.severity}`}
             >
               <span>Status masy</span>
@@ -1149,7 +1164,9 @@ function App() {
               <div className="feeding-result">
                 <div>
                   <span>Najbliższa data</span>
-                  <strong>{result.nextFeedingDate}</strong>
+                  <strong data-testid="dashboard-next-feeding-date">
+                    {result.nextFeedingDate}
+                  </strong>
                 </div>
                 <div>
                   <span>Zakres karmówki</span>
@@ -1166,6 +1183,7 @@ function App() {
                   <strong>{result.feedingIntervalDays} dni</strong>
                 </div>
                 <p
+                  data-testid="dashboard-days-left"
                   className={
                     result.status === "overdue" ||
                     result.status === "vet_check_recommended" ||
@@ -1202,6 +1220,7 @@ function App() {
           <div className="div-actions">
             <button
               className="button button--primary"
+              data-testid="dashboard-button-calculate"
               disabled={calculating || profileLoading}
               onClick={calculateFeeding}
             >

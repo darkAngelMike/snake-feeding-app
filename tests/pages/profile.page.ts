@@ -10,13 +10,19 @@ export class ProfilePage {
     life_stage: string;
     body_condition: string;
   }) {
-    await this.page.getByLabel("Imię węża").fill(profile.name);
-    await this.page.getByLabel("Waga węża (g)").fill(String(profile.current_weight_g));
+    await this.page.getByTestId("profile-input-name").fill(profile.name);
+    await this.page
+      .getByTestId("profile-input-weight")
+      .fill(String(profile.current_weight_g));
     await this.page
       .getByLabel("Data ostatniego udanego karmienia")
       .fill(profile.last_successful_feeding_date);
-    await this.page.getByLabel("Etap życia").selectOption(profile.life_stage);
-    await this.page.getByLabel("Kondycja").selectOption(profile.body_condition);
-    await this.page.getByRole("button", { name: "Zapisz profil" }).click();
+    await this.page
+      .getByTestId("profile-select-life-stage")
+      .selectOption(profile.life_stage);
+    await this.page
+      .getByTestId("profile-select-condition")
+      .selectOption(profile.body_condition);
+    await this.page.getByTestId("profile-button-save").click();
   }
 }

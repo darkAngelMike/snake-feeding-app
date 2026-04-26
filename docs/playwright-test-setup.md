@@ -22,6 +22,13 @@ BASE_URL=http://localhost:5173
 API_BASE_URL=http://localhost:3000
 ```
 
+Required for tests that create real Supabase users:
+
+```bash
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+```
+
 For admin cleanup tests in a dedicated test environment:
 
 ```bash
@@ -64,10 +71,10 @@ npm run test:allure
 
 ## Current Coverage
 
-Implemented only minimal smoke examples:
+Implemented smoke examples:
 
-- API auth-negative smoke for `GET /snake-profiles` without token.
-- UI smoke verifying login page loads.
+- API smoke for auth-negative, profile creation, calculation, feeding save and feeding history.
+- UI smoke that logs in through Supabase Auth API, opens dashboard, calculates feeding, saves feeding and verifies history.
 
 Full regression is intentionally not implemented yet.
 

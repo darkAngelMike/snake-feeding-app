@@ -10,10 +10,10 @@ export class LoginPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.usernameInput = page.getByLabel("Nazwa użytkownika");
-    this.passwordInput = page.getByLabel("Hasło");
-    this.loginButton = page.getByRole("button", { name: "Zaloguj" });
-    this.registerButton = page.getByRole("button", { name: "Zarejestruj" });
+    this.usernameInput = page.getByTestId("login-input-username");
+    this.passwordInput = page.getByTestId("login-input-password");
+    this.loginButton = page.getByTestId("login-button-submit");
+    this.registerButton = page.getByTestId("login-button-register");
   }
 
   async goto() {
