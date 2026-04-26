@@ -3,16 +3,22 @@ import "./App.css";
 import { supabase } from "./supabaseClient";
 
 const stageLabels = {
-  hatchling: "Hatchling",
-  juvenile: "Juvenile",
-  subadult: "Subadult",
+  hatchling: "Młody po wykluciu",
+  juvenile: "Młody",
+  subadult: "Podrostek",
   adult: "Dorosły",
 };
 
 const conditionLabels = {
-  underweight: "Za chudy",
+  underweight: "Niedowaga",
   normal: "Normalny",
-  overweight: "Za gruby",
+  overweight: "Nadwaga",
+};
+
+const feedingStatusLabels = {
+  success: "Zjedzone",
+  refused: "Odmowa",
+  skipped: "Pominięte",
 };
 
 const API_BASE_URL =
@@ -32,10 +38,10 @@ function App() {
 
   const [snakeName, setSnakeName] = useState("");
   const [currentWeightG, setCurrentWeightG] = useState("");
-  const [lifeStage, setLifeStage] = useState("adult");
+  const [lifeStage, setLifeStage] = useState("");
   const [lastFeedingDate, setLastFeedingDate] = useState("");
-  const [bodyCondition, setBodyCondition] = useState("normal");
-  const [refusedMealsCount, setRefusedMealsCount] = useState("0");
+  const [bodyCondition, setBodyCondition] = useState("");
+  const [refusedMealsCount, setRefusedMealsCount] = useState("");
   const [isShedding, setIsShedding] = useState(false);
   const [lastMealWeightG, setLastMealWeightG] = useState("");
 
@@ -58,6 +64,8 @@ function App() {
   const isProfileComplete =
     profile?.name &&
     profile?.current_weight_g &&
+    profile?.life_stage &&
+    profile?.body_condition &&
     profile?.last_successful_feeding_date;
 
   const getFakeEmail = () => `${nick}@snake.local`;
@@ -91,10 +99,10 @@ function App() {
     setProfile(null);
     setSnakeName("");
     setCurrentWeightG("");
-    setLifeStage("adult");
+    setLifeStage("");
     setLastFeedingDate("");
-    setBodyCondition("normal");
-    setRefusedMealsCount("0");
+    setBodyCondition("");
+    setRefusedMealsCount("");
     setIsShedding(false);
     setLastMealWeightG("");
     setResult(null);
@@ -118,16 +126,16 @@ function App() {
     if (data) {
       setSnakeName(data.name || "");
       setCurrentWeightG(data.current_weight_g || "");
-      setLifeStage(data.life_stage || "adult");
+      setLifeStage(data.life_stage || "");
       setLastFeedingDate(data.last_successful_feeding_date || "");
-      setBodyCondition(data.body_condition || "normal");
+      setBodyCondition(data.body_condition || "");
     } else {
       setHistory([]);
       setSnakeName("");
       setCurrentWeightG("");
-      setLifeStage("adult");
+      setLifeStage("");
       setLastFeedingDate("");
-      setBodyCondition("normal");
+      setBodyCondition("");
     }
   };
 
@@ -309,8 +317,8 @@ function App() {
   const saveProfile = async () => {
     setProfileMessage("");
 
-    if (!snakeName || !currentWeightG) {
-      setProfileMessage("Uzupełnij imię i wagę węża.");
+    if (!snakeName || !currentWeightG || !lifeStage || !bodyCondition) {
+      setProfileMessage("Uzupełnij imię, wagę, etap życia i kondycję węża.");
       return;
     }
 
@@ -480,7 +488,7 @@ function App() {
       <main className="auth-page">
         <section className="auth-hero" aria-label="Panel opiekuna węża">
           <p className="eyebrow">Panel opiekuna gada</p>
-          <h1>Snake Care</h1>
+          <h1>Opieka nad wężem</h1>
           <p>
             Profesjonalny rytm karmienia, aktualna waga i historia opieki w
             jednym czytelnym miejscu.
@@ -500,12 +508,12 @@ function App() {
           )}
 
           <div className="field">
-            <label htmlFor="nick">Nick</label>
+            <label htmlFor="nick">Nazwa użytkownika</label>
             <input
               id="nick"
               value={nick}
               onChange={(e) => setNick(e.target.value)}
-              placeholder="Twój nick"
+              placeholder="Twoja nazwa"
             />
           </div>
 
@@ -607,7 +615,7 @@ function App() {
                 type="number"
                 value={currentWeightG}
                 onChange={(e) => setCurrentWeightG(e.target.value)}
-                placeholder="500"
+                placeholder="np. 500"
               />
             </div>
 
@@ -622,16 +630,18 @@ function App() {
             </div>
 
             <div className="field">
-              <label htmlFor="lifeStage">Etap</label>
+              <label htmlFor="lifeStage">Etap życia</label>
               <select
                 id="lifeStage"
                 value={lifeStage}
+                className={!lifeStage ? "select--placeholder" : undefined}
                 onChange={(e) => setLifeStage(e.target.value)}
               >
-                <option value="hatchling">Hatchling</option>
-                <option value="juvenile">Juvenile</option>
-                <option value="subadult">Subadult</option>
-                <option value="adult">Adult</option>
+                <option value="">Wybierz etap życia</option>
+                <option value="hatchling">Młody po wykluciu</option>
+                <option value="juvenile">Młody</option>
+                <option value="subadult">Podrostek</option>
+                <option value="adult">Dorosły</option>
               </select>
             </div>
 
@@ -640,11 +650,13 @@ function App() {
               <select
                 id="bodyCondition"
                 value={bodyCondition}
+                className={!bodyCondition ? "select--placeholder" : undefined}
                 onChange={(e) => setBodyCondition(e.target.value)}
               >
-                <option value="underweight">Za chudy</option>
+                <option value="">Wybierz kondycję</option>
+                <option value="underweight">Niedowaga</option>
                 <option value="normal">Normalny</option>
-                <option value="overweight">Za gruby</option>
+                <option value="overweight">Nadwaga</option>
               </select>
             </div>
           </div>
@@ -724,7 +736,7 @@ function App() {
                 type="number"
                 value={feedingSnakeWeight}
                 onChange={(e) => setFeedingSnakeWeight(e.target.value)}
-                placeholder={String(profile.current_weight_g || "")}
+                placeholder="Wpisz aktualną wagę"
               />
             </div>
 
@@ -737,8 +749,8 @@ function App() {
                 onChange={(e) => setMealWeight(e.target.value)}
                 placeholder={
                   result?.mealWeightTarget
-                    ? String(result.mealWeightTarget)
-                    : ""
+                    ? `Sugerowane: ${result.mealWeightTarget} g`
+                    : "Wpisz wagę pokarmu"
                 }
               />
             </div>
@@ -802,7 +814,9 @@ function App() {
                     <h2>{item.meal_weight_g} g pokarmu</h2>
                     <div className="meta-grid">
                       <span>Waga węża: {item.snake_weight_g} g</span>
-                      <span>Status: {item.status}</span>
+                      <span>
+                        Status: {feedingStatusLabels[item.status] || item.status}
+                      </span>
                     </div>
                   </div>
                 </article>
@@ -883,6 +897,7 @@ function App() {
                 type="number"
                 value={refusedMealsCount}
                 onChange={(e) => setRefusedMealsCount(e.target.value)}
+                placeholder="Brak odmów"
               />
             </div>
 

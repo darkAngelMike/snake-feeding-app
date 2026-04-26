@@ -132,6 +132,23 @@
     box-shadow 0.18s ease;
 }
 
+.field input::placeholder {
+  color: #8a9a90;
+  opacity: 1;
+}
+
+.field select.select--placeholder {
+  color: #8a9a90;
+}
+
+.field select option {
+  color: var(--text);
+}
+
+.field select option[value=""] {
+  color: #8a9a90;
+}
+
 .field input:focus,
 .field select:focus {
   border-color: var(--primary);
