@@ -1,49 +1,27 @@
-const { calculateFeeding } = require("./services/feedingService");
 const express = require("express");
-const { saveCalculation, getHistory } = require("./services/historyService");
 const cors = require("cors");
+const calculationRoutes = require("./routes/calculationRoutes");
+const feedingRoutes = require("./routes/feedingRoutes");
+const { getPort } = require("./config/server");
+const logger = require("./utils/logger");
 
 const app = express();
+const port = getPort();
 
-app.use(cors({
-  origin: "*"
-}));
+app.use(
+  cors({
+    origin: "*",
+  }),
+);
 app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
   res.send("Snake app działa 🐍");
 });
 
-app.post("/calculate", (req, res) => {
-  try {
-    const result = calculateFeeding(req.body);
+app.use(calculationRoutes);
+app.use(feedingRoutes);
 
-    if (req.body.user_id && req.body.snake_id) {
-      saveCalculation({
-        ...req.body,
-        ...result.result,
-      }).catch((saveError) => {
-        console.error(saveError);
-      });
-    }
-
-    res.json(result);
-  } catch (error) {
-    res.status(400).json({
-      error: error.message,
-    });
-  }
-});
-
-app.get("/history", async (req, res) => {
-  try {
-    const history = await getHistory();
-    res.json(history);
-  } catch (error) {
-    res.status(500).json({ error: "Błąd pobierania historii" });
-  }
-});
-
-app.listen(3000, () => {
-  console.log("Server działa na porcie 3000");
+app.listen(port, () => {
+  logger.info(`Server działa na porcie ${port}`);
 });

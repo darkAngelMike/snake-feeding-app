@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snake App - Dokumentacja projektu</title>
+    <style>
+      :root {
+        --bg: #f4f7f3;
+        --paper: #ffffff;
+        --paper-soft: #f8fbf7;
+        --ink: #17211c;
+        --muted: #647267;
+        --line: #d9e4d7;
+        --brand: #256f4a;
+        --brand-dark: #174b33;
+        --brand-soft: #dfeee5;
+        --gold: #b68442;
+        --danger: #b42318;
+        --danger-soft: #fee4e2;
+        --code: #132118;
+        --code-bg: #edf4eb;
+        --shadow: 0 22px 60px rgba(31, 42, 36, 0.12);
+        --radius: 10px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(37, 111, 74, 0.12), transparent 34rem),
+          linear-gradient(180deg, #f8fbf7 0%, var(--bg) 42%);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        line-height: 1.6;
+      }
+
+      a {
+        color: var(--brand-dark);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .hero {
+        display: grid;
+        gap: 24px;
+        padding: 48px 0 28px;
+      }
+
+      .hero-card {
+        overflow: hidden;
+        border: 1px solid rgba(37, 111, 74, 0.16);
+        border-radius: 18px;
+        background:
+          linear-gradient(135deg, rgba(23, 75, 51, 0.96), rgba(37, 111, 74, 0.74)),
+          url("https://images.unsplash.com/photo-1570741066052-817c6de995c8?auto=format&fit=crop&w=1800&q=80");
+        background-position: center;
+        background-size: cover;
+        box-shadow: var(--shadow);
+      }
+
+      .hero-content {
+        max-width: 760px;
+        padding: 42px 28px;
+        color: #f7fbf6;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--gold);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .hero .eyebrow {
+        color: #f3d9a8;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        line-height: 1.15;
+      }
+
+      h1 {
+        font-size: clamp(2.5rem, 9vw, 5.8rem);
+        letter-spacing: -0.04em;
+      }
+
+      h2 {
+        font-size: clamp(1.45rem, 4vw, 2.15rem);
+        letter-spacing: -0.02em;
+      }
+
+      h3 {
+        font-size: 1.05rem;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      .lead {
+        max-width: 720px;
+        margin-top: 18px;
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 1.08rem;
+      }
+
+      .meta-grid {
+        display: grid;
+        gap: 12px;
+        margin-top: 26px;
+      }
+
+      .meta-item {
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: var(--radius);
+        padding: 14px;
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(10px);
+      }
+
+      .meta-item span {
+        display: block;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 0.82rem;
+      }
+
+      .meta-item strong {
+        display: block;
+        margin-top: 4px;
+        color: #ffffff;
+      }
+
+      .layout {
+        display: grid;
+        gap: 24px;
+        align-items: start;
+        padding: 8px 0 56px;
+      }
+
+      .toc {
+        position: sticky;
+        top: 18px;
+        display: none;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 18px;
+        background: rgba(255, 255, 255, 0.84);
+        box-shadow: 0 12px 30px rgba(31, 42, 36, 0.08);
+      }
+
+      .toc nav {
+        display: grid;
+        gap: 8px;
+      }
+
+      .toc a {
+        border-radius: 8px;
+        padding: 8px 10px;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .toc a:hover {
+        color: var(--brand-dark);
+        background: var(--brand-soft);
+        text-decoration: none;
+      }
+
+      .content {
+        display: grid;
+        gap: 18px;
+      }
+
+      .section {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 22px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 12px 34px rgba(31, 42, 36, 0.08);
+      }
+
+      .section-header {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+
+      .section-header p {
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 16px;
+        background: var(--paper-soft);
+      }
+
+      .card h3 {
+        margin-bottom: 8px;
+      }
+
+      .card p,
+      .card li {
+        color: var(--muted);
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .pill {
+        border: 1px solid rgba(37, 111, 74, 0.18);
+        border-radius: 999px;
+        padding: 6px 10px;
+        color: var(--brand-dark);
+        background: var(--brand-soft);
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      li + li {
+        margin-top: 7px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--paper);
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--brand-dark);
+        background: var(--brand-soft);
+        font-size: 0.9rem;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      code {
+        border-radius: 6px;
+        padding: 2px 6px;
+        color: var(--code);
+        background: var(--code-bg);
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.92em;
+      }
+
+      pre {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        margin: 0;
+        padding: 16px;
+        color: #eaf5ed;
+        background: #17211c;
+        line-height: 1.5;
+      }
+
+      pre code {
+        padding: 0;
+        color: inherit;
+        background: transparent;
+      }
+
+      .callout {
+        border: 1px solid rgba(180, 35, 24, 0.2);
+        border-radius: var(--radius);
+        padding: 14px;
+        color: #7a1b13;
+        background: var(--danger-soft);
+      }
+
+      .ok {
+        border-color: rgba(37, 111, 74, 0.18);
+        color: var(--brand-dark);
+        background: var(--brand-soft);
+      }
+
+      .footer {
+        padding: 28px 0 42px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      @media (min-width: 760px) {
+        .hero-content {
+          padding: 58px;
+        }
+
+        .meta-grid,
+        .grid.two {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .grid.three {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .section {
+          padding: 28px;
+        }
+      }
+
+      @media (min-width: 1040px) {
+        .layout {
+          grid-template-columns: 260px minmax(0, 1fr);
+        }
+
+        .toc {
+          display: block;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero shell">
+      <section class="hero-card">
+        <div class="hero-content">
+          <p class="eyebrow">Dokumentacja projektu</p>
+          <h1>Snake App</h1>
+          <p class="lead">
+            Aplikacja do prowadzenia profilu pytona królewskiego, planowania
+            karmienia, rejestrowania historii oraz wyliczania zaleceń na
+            podstawie masy, etapu życia i kondycji.
+          </p>
+
+          <div class="meta-grid">
+            <div class="meta-item">
+              <span>Frontend</span>
+              <strong>React + Vite + Supabase Auth</strong>
+            </div>
+            <div class="meta-item">
+              <span>Backend</span>
+              <strong>Node.js + Express + Supabase</strong>
+            </div>
+            <div class="meta-item">
+              <span>Baza danych</span>
+              <strong>Supabase / PostgreSQL</strong>
+            </div>
+            <div class="meta-item">
+              <span>Zakres aplikacji</span>
+              <strong>Planer, nie porada weterynaryjna</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <main class="layout shell">
+      <aside class="toc" aria-label="Spis treści">
+        <p class="eyebrow">Spis treści</p>
+        <nav>
+          <a href="#overview">Opis projektu</a>
+          <a href="#architecture">Architektura</a>
+          <a href="#flow">Główne flow</a>
+          <a href="#schema">Schemat danych</a>
+          <a href="#api">API backendu</a>
+          <a href="#feeding-logic">Logika karmienia</a>
+          <a href="#frontend">Frontend</a>
+          <a href="#setup">Uruchomienie</a>
+          <a href="#quality">Testy i jakość</a>
+          <a href="#risks">Ryzyka</a>
+        </nav>
+      </aside>
+
+      <div class="content">
+        <section class="section" id="overview">
+          <div class="section-header">
+            <p class="eyebrow">Cel</p>
+            <h2>Opis projektu</h2>
+            <p>
+              Snake App to panel opiekuna gada. Użytkownik zakłada konto,
+              uzupełnia profil węża, oblicza następne karmienie i zapisuje
+              faktyczne karmienia w historii.
+            </p>
+          </div>
+
+          <div class="grid three">
+            <article class="card">
+              <h3>Profil węża</h3>
+              <p>
+                Przechowuje imię, aktualną masę, etap życia, kondycję oraz datę
+                ostatniego udanego karmienia.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Plan karmienia</h3>
+              <p>
+                Backend liczy zakres karmówki, interwał, następną datę,
+                ostrzeżenia i status planu.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Historia</h3>
+              <p>
+                Faktyczne karmienia są zapisywane jako osobne wpisy, razem z
+                masą węża i masą karmówki.
+              </p>
+            </article>
+          </div>
+
+          <div class="callout" style="margin-top: 16px">
+            Aplikacja działa jako planer i dziennik opieki. Nie zastępuje
+            diagnostyki ani porady weterynarza od zwierząt egzotycznych.
+          </div>
+        </section>
+
+        <section class="section" id="architecture">
+          <div class="section-header">
+            <p class="eyebrow">System</p>
+            <h2>Architektura</h2>
+          </div>
+
+          <div class="grid two">
+            <article class="card">
+              <h3>Client</h3>
+              <ul>
+                <li><code>client/src/App.jsx</code> - główny komponent UI i flow aplikacji.</li>
+                <li><code>client/src/App.css</code> - warstwa wizualna dashboardu.</li>
+                <li><code>client/src/supabaseClient.js</code> - klient Supabase dla auth i bazy.</li>
+              </ul>
+            </article>
+
+            <article class="card">
+              <h3>Server</h3>
+              <ul>
+                <li><code>server/index.js</code> - endpointy Express.</li>
+                <li><code>server/services/feedingService.js</code> - logika kalkulacji karmienia.</li>
+                <li><code>server/services/historyService.js</code> - zapis kalkulacji i historia.</li>
+                <li><code>server/supabaseClient.js</code> - klient Supabase po stronie backendu.</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="flow">
+          <div class="section-header">
+            <p class="eyebrow">UX</p>
+            <h2>Główne flow aplikacji</h2>
+          </div>
+
+          <ol>
+            <li>Użytkownik loguje się lub rejestruje przez Supabase Auth.</li>
+            <li>Aplikacja pobiera profil z tabeli <code>snake_profiles</code>.</li>
+            <li>Jeżeli profil jest niekompletny, użytkownik uzupełnia dane węża.</li>
+            <li>Dashboard pokazuje aktualną wagę, etap życia, kondycję i datę ostatniego udanego karmienia.</li>
+            <li>Użytkownik może obliczyć plan karmienia przez endpoint <code>/calculate</code>.</li>
+            <li>Wynik kalkulacji może zostać zapisany w <code>feeding_calculations</code>.</li>
+            <li>Faktyczne karmienie jest zapisywane w <code>feedings</code>.</li>
+            <li>Historia karmień jest wyświetlana jako timeline.</li>
+          </ol>
+        </section>
+
+        <section class="section" id="schema">
+          <div class="section-header">
+            <p class="eyebrow">Supabase</p>
+            <h2>Docelowy schemat danych</h2>
+            <p>
+              Aplikacja została dostosowana do nowego nazewnictwa pól. Stare
+              pola <code>weight</code>, <code>stage</code>,
+              <code>snake_weight</code> i <code>meal_weight</code> nie powinny
+              być już używane przez aktualny kod.
+            </p>
+          </div>
+
+          <div class="grid">
+            <article class="card">
+              <h3>snake_profiles</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Pole</th>
+                    <th>Opis</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>id</code></td><td>Identyfikator profilu węża.</td></tr>
+                  <tr><td><code>user_id</code></td><td>Właściciel profilu, powiązany z użytkownikiem Supabase.</td></tr>
+                  <tr><td><code>name</code></td><td>Imię węża.</td></tr>
+                  <tr><td><code>current_weight_g</code></td><td>Aktualna masa węża w gramach.</td></tr>
+                  <tr><td><code>life_stage</code></td><td><code>hatchling</code>, <code>juvenile</code>, <code>subadult</code> lub <code>adult</code>.</td></tr>
+                  <tr><td><code>body_condition</code></td><td><code>underweight</code>, <code>normal</code> lub <code>overweight</code>.</td></tr>
+                  <tr><td><code>last_successful_feeding_date</code></td><td>Data ostatniego udanego karmienia.</td></tr>
+                </tbody>
+              </table>
+            </article>
+
+            <article class="card">
+              <h3>feedings</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Pole</th>
+                    <th>Opis</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>id</code></td><td>Identyfikator wpisu karmienia.</td></tr>
+                  <tr><td><code>user_id</code></td><td>Właściciel wpisu.</td></tr>
+                  <tr><td><code>snake_id</code></td><td>Profil węża.</td></tr>
+                  <tr><td><code>feeding_date</code></td><td>Faktyczna data karmienia.</td></tr>
+                  <tr><td><code>snake_weight_g</code></td><td>Masa węża w dniu karmienia.</td></tr>
+                  <tr><td><code>meal_weight_g</code></td><td>Masa karmówki w gramach.</td></tr>
+                  <tr><td><code>status</code></td><td>Status wpisu, obecnie np. <code>ok</code>.</td></tr>
+                </tbody>
+              </table>
+            </article>
+
+            <article class="card">
+              <h3>feeding_calculations</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Pole</th>
+                    <th>Opis</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>user_id</code></td><td>Właściciel kalkulacji.</td></tr>
+                  <tr><td><code>snake_id</code></td><td>Profil węża.</td></tr>
+                  <tr><td><code>snake_weight_g</code></td><td>Masa użyta do kalkulacji.</td></tr>
+                  <tr><td><code>life_stage</code></td><td>Etap życia użyty do kalkulacji.</td></tr>
+                  <tr><td><code>body_condition</code></td><td>Kondycja użyta do kalkulacji.</td></tr>
+                  <tr><td><code>meal_weight_min</code></td><td>Dolna granica rekomendowanej karmówki.</td></tr>
+                  <tr><td><code>meal_weight_max</code></td><td>Górna granica rekomendowanej karmówki.</td></tr>
+                  <tr><td><code>meal_weight_target</code></td><td>Docelowa masa karmówki.</td></tr>
+                  <tr><td><code>feeding_interval_days</code></td><td>Wyliczony interwał w dniach.</td></tr>
+                  <tr><td><code>next_feeding_date</code></td><td>Planowana data kolejnego karmienia.</td></tr>
+                  <tr><td><code>planner_status</code></td><td><code>ok</code>, <code>due_soon</code>, <code>overdue</code> lub <code>vet_check_recommended</code>.</td></tr>
+                  <tr><td><code>warnings</code></td><td>Lista ostrzeżeń, najlepiej jako <code>jsonb</code>.</td></tr>
+                  <tr><td><code>disclaimer</code></td><td>Informacja, że wynik nie jest poradą weterynaryjną.</td></tr>
+                  <tr><td><code>input_snapshot</code></td><td>Pełny snapshot danych wejściowych i wyniku.</td></tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="api">
+          <div class="section-header">
+            <p class="eyebrow">Backend</p>
+            <h2>API backendu</h2>
+          </div>
+
+          <div class="grid">
+            <article class="card">
+              <h3>POST /calculate</h3>
+              <p>
+                Oblicza plan karmienia pytona królewskiego. Jeżeli payload
+                zawiera <code>user_id</code> i <code>snake_id</code>, backend
+                próbuje zapisać wynik w tabeli
+                <code>feeding_calculations</code>.
+              </p>
+              <div class="pill-row">
+                <span class="pill">weight_g</span>
+                <span class="pill">life_stage</span>
+                <span class="pill">body_condition</span>
+                <span class="pill">last_successful_feeding_date</span>
+                <span class="pill">refused_meals_count</span>
+                <span class="pill">is_shedding</span>
+                <span class="pill">last_meal_weight_g</span>
+              </div>
+            </article>
+
+            <pre><code>{
+  "user_id": "uuid",
+  "snake_id": "uuid",
+  "weight_g": 1000,
+  "life_stage": "adult",
+  "body_condition": "normal",
+  "last_successful_feeding_date": "2026-04-20",
+  "refused_meals_count": 0,
+  "is_shedding": false,
+  "last_meal_weight_g": null
+}</code></pre>
+
+            <pre><code>{
+  "result": {
+    "mealWeightMin": 80,
+    "mealWeightMax": 100,
+    "mealWeightTarget": 90,
+    "feedingIntervalDays": 18,
+    "nextFeedingDate": "2026-05-08",
+    "status": "ok",
+    "warnings": [],
+    "disclaimer": "To jest planer karmienia..."
+  }
+}</code></pre>
+          </div>
+        </section>
+
+        <section class="section" id="feeding-logic">
+          <div class="section-header">
+            <p class="eyebrow">Reguły</p>
+            <h2>Logika karmienia</h2>
+            <p>
+              Reguły są zaimplementowane w
+              <code>server/services/feedingService.js</code>. Wynik jest
+              orientacyjnym planem, a nie diagnozą.
+            </p>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Etap życia</th>
+                <th>Zakres karmówki</th>
+                <th>Interwał</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>hatchling</code></td><td>12-15% masy ciała</td><td>5-7 dni</td></tr>
+              <tr><td><code>juvenile</code></td><td>10-15% masy ciała</td><td>7-10 dni</td></tr>
+              <tr><td><code>subadult</code></td><td>10-12% masy ciała</td><td>10-14 dni</td></tr>
+              <tr><td><code>adult</code></td><td>8-10% masy ciała</td><td>14-21 dni</td></tr>
+            </tbody>
+          </table>
+
+          <div class="grid two" style="margin-top: 16px">
+            <article class="card">
+              <h3>Kondycja</h3>
+              <ul>
+                <li><code>underweight</code> używa górnej części zakresu i dodaje ostrzeżenie.</li>
+                <li><code>normal</code> używa środka zakresu.</li>
+                <li><code>overweight</code> używa dolnej części zakresu; dla dorosłych 6-8%.</li>
+              </ul>
+            </article>
+
+            <article class="card">
+              <h3>Ostrzeżenia</h3>
+              <ul>
+                <li>Dwie lub więcej odmów karmienia.</li>
+                <li>Wylinka, która może wpływać na apetyt.</li>
+                <li>Ostatnia karmówka powyżej 15% masy ciała.</li>
+                <li>Skrajna niespójność etapu życia z masą.</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="frontend">
+          <div class="section-header">
+            <p class="eyebrow">Interfejs</p>
+            <h2>Frontend</h2>
+          </div>
+
+          <div class="grid two">
+            <article class="card">
+              <h3>Ekrany</h3>
+              <ul>
+                <li>Logowanie i rejestracja.</li>
+                <li>Formularz profilu węża.</li>
+                <li>Dashboard z podsumowaniem.</li>
+                <li>Karta planu następnego karmienia.</li>
+                <li>Formularz rejestracji karmienia.</li>
+                <li>Historia karmień jako timeline.</li>
+              </ul>
+            </article>
+
+            <article class="card">
+              <h3>Priorytety UX</h3>
+              <ul>
+                <li>Mobile-first i czytelne karty.</li>
+                <li>Wyraźne komunikaty błędów i stanów zapisu.</li>
+                <li>Rozdzielenie planu od faktycznej historii karmień.</li>
+                <li>Widoczny disclaimer przy wyniku kalkulacji.</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="setup">
+          <div class="section-header">
+            <p class="eyebrow">Development</p>
+            <h2>Uruchomienie projektu</h2>
+          </div>
+
+          <div class="grid two">
+            <article class="card">
+              <h3>Frontend</h3>
+              <pre><code>cd client
+npm install
+npm run dev</code></pre>
+            </article>
+
+            <article class="card">
+              <h3>Backend</h3>
+              <pre><code>cd server
+npm install
+npm start</code></pre>
+            </article>
+          </div>
+
+          <div class="callout ok" style="margin-top: 16px">
+            Plik dokumentacji jest statyczny. Można go otworzyć bezpośrednio w
+            przeglądarce z katalogu <code>docs/index.html</code>.
+          </div>
+        </section>
+
+        <section class="section" id="quality">
+          <div class="section-header">
+            <p class="eyebrow">Jakość</p>
+            <h2>Testy i komendy kontrolne</h2>
+          </div>
+
+          <div class="grid">
+            <pre><code>cd server
+npm test</code></pre>
+
+            <pre><code>cd client
+npm run lint
+npm run build</code></pre>
+
+            <article class="card">
+              <h3>Aktualny zakres testów</h3>
+              <p>
+                Backend ma lekkie testy jednostkowe dla
+                <code>feedingService</code>, bez dodatkowych zależności.
+                Testowane są m.in. zakresy karmówki, interwały, walidacje,
+                odmowy karmienia i wylinka.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="risks">
+          <div class="section-header">
+            <p class="eyebrow">Uwagi techniczne</p>
+            <h2>Znane ryzyka i następne kroki</h2>
+          </div>
+
+          <div class="grid">
+            <div class="callout">
+              Endpoint <code>/calculate</code> obecnie zwraca wynik kalkulacji
+              niezależnie od tego, czy zapis do
+              <code>feeding_calculations</code> zakończy się sukcesem. Błąd
+              zapisu jest logowany po stronie backendu.
+            </div>
+
+            <article class="card">
+              <h3>Rekomendowane usprawnienia</h3>
+              <ul>
+                <li>Ustalić, czy zapis kalkulacji ma być wymagany, czy best-effort.</li>
+                <li>Przenieść adres backendu i klucze Supabase do zmiennych środowiskowych.</li>
+                <li>Zweryfikować RLS dla <code>snake_profiles</code>, <code>feedings</code> i <code>feeding_calculations</code>.</li>
+                <li>Dodać jawny status zapisu kalkulacji w odpowiedzi API.</li>
+                <li>Dodać daty <code>created_at</code> i <code>updated_at</code> tam, gdzie ich brakuje.</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer shell">
+      Dokumentacja wygenerowana dla projektu Snake App. Dokument opisuje stan
+      kodu i docelowy kontrakt danych używany przez aplikację.
+    </footer>
+  </body>
+</html>
