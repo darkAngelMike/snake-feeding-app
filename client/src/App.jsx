@@ -15,6 +15,9 @@ const conditionLabels = {
   overweight: "Za gruby",
 };
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://snake-backend-kb14.onrender.com";
+
 function App() {
   const [session, setSession] = useState(null);
   const [view, setView] = useState("dashboard");
@@ -56,6 +59,10 @@ function App() {
     profile?.last_successful_feeding_date;
 
   const getFakeEmail = () => `${nick}@snake.local`;
+  const getApiHeaders = () => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${session.access_token}`,
+  });
 
   const applyProfileData = (data) => {
     setProfile(data);
@@ -235,26 +242,20 @@ function App() {
     setCalculating(true);
 
     try {
-      const response = await fetch(
-        "https://snake-backend-kb14.onrender.com/calculate",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            user_id: session.user.id,
-            snake_id: profile.id,
-            last_successful_feeding_date: profile.last_successful_feeding_date,
-            weight_g: profile.current_weight_g,
-            life_stage: lifeStage,
-            body_condition: bodyCondition,
-            refused_meals_count: Number(refusedMealsCount || 0),
-            is_shedding: isShedding,
-            last_meal_weight_g: lastMealWeightG ? Number(lastMealWeightG) : null,
-          }),
-        },
-      );
+      const response = await fetch(`${API_BASE_URL}/calculate`, {
+        method: "POST",
+        headers: getApiHeaders(),
+        body: JSON.stringify({
+          snake_id: profile.id,
+          last_successful_feeding_date: profile.last_successful_feeding_date,
+          weight_g: profile.current_weight_g,
+          life_stage: lifeStage,
+          body_condition: bodyCondition,
+          refused_meals_count: Number(refusedMealsCount || 0),
+          is_shedding: isShedding,
+          last_meal_weight_g: lastMealWeightG ? Number(lastMealWeightG) : null,
+        }),
+      });
 
       const data = await response.json();
 
@@ -281,31 +282,39 @@ function App() {
 
     setSavingFeeding(true);
 
-    const { error } = await supabase.from("feedings").insert([
-      {
-        user_id: session.user.id,
-        snake_id: profile.id,
-        feeding_date: feedingDate,
-        snake_weight_g: Number(feedingSnakeWeight),
-        meal_weight_g: Number(mealWeight),
-        status: "ok",
-      },
-    ]);
+    try {
+      const response = await fetch(`${API_BASE_URL}/feedings`, {
+        method: "POST",
+        headers: getApiHeaders(),
+        body: JSON.stringify({
+          snake_id: profile.id,
+          feeding_date: feedingDate,
+          snake_weight_g: Number(feedingSnakeWeight),
+          meal_weight_g: Number(mealWeight),
+          status: "success",
+        }),
+      });
 
-    if (error) {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Nie udało się zapisać karmienia");
+      }
+
+      if (!data.profileUpdated) {
+        console.error("Karmienie zapisane, ale profil nie został zaktualizowany", {
+          snake_id: profile.id,
+          feeding_date: feedingDate,
+        });
+      }
+    } catch (error) {
       console.error(error);
       setSavingFeeding(false);
-      setFeedingMessage("Nie udało się zapisać karmienia. Spróbuj ponownie.");
+      setFeedingMessage(
+        error.message || "Nie udało się zapisać karmienia. Spróbuj ponownie.",
+      );
       return;
     }
-
-    await supabase
-      .from("snake_profiles")
-      .update({
-        current_weight_g: Number(feedingSnakeWeight),
-        last_successful_feeding_date: feedingDate,
-      })
-      .eq("id", profile.id);
 
     setSavingFeeding(false);
     setFeedingSaved(true);

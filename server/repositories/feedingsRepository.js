@@ -11,7 +11,19 @@ async function getHistory() {
   }
 }
 
-async function createFeeding(payload) {
+async function getBySnakeId(snakeId) {
+  try {
+    return await getSupabaseClient()
+      .from("feedings")
+      .select("*")
+      .eq("snake_id", snakeId)
+      .order("feeding_date", { ascending: false });
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
+async function insertFeeding(payload) {
   try {
     return await getSupabaseClient()
       .from("feedings")
@@ -24,6 +36,7 @@ async function createFeeding(payload) {
 }
 
 module.exports = {
-  createFeeding,
+  getBySnakeId,
   getHistory,
+  insertFeeding,
 };

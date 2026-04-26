@@ -1,24 +1,46 @@
 const { calculateFeeding } = require("../services/feedingService");
 const feedingCalculationsRepository = require("../repositories/feedingCalculationsRepository");
+const snakeProfilesRepository = require("../repositories/snakeProfilesRepository");
 const logger = require("../utils/logger");
 
 const CALCULATION_SAVE_ERROR = "Nie udało się zapisać kalkulacji";
 
 function shouldSaveCalculation(payload) {
-  return Boolean(payload.user_id && payload.snake_id);
+  return Boolean(payload.snake_id);
 }
 
 async function calculate(req, res) {
   try {
-    const calculation = calculateFeeding(req.body);
+    const userId = req.user.id;
+    const payload = {
+      ...req.body,
+      user_id: userId,
+    };
+    const calculation = calculateFeeding(payload);
     const responseBody = { ...calculation };
 
-    if (!shouldSaveCalculation(req.body)) {
+    if (!shouldSaveCalculation(payload)) {
       return res.json(responseBody);
     }
 
+    const { data: snakeProfile, error: snakeProfileError } =
+      await snakeProfilesRepository.findById(payload.snake_id);
+
+    if (snakeProfileError) {
+      logger.error("Nie udało się zweryfikować profilu węża", snakeProfileError);
+      return res.status(500).json({
+        error: "Błąd weryfikacji profilu węża",
+      });
+    }
+
+    if (!snakeProfile || snakeProfile.user_id !== userId) {
+      return res.status(403).json({
+        error: "Brak dostępu do profilu węża",
+      });
+    }
+
     const { error } = await feedingCalculationsRepository.createCalculation({
-      ...req.body,
+      ...payload,
       ...calculation.result,
     });
 
