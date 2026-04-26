@@ -8,6 +8,8 @@ const VALID_BODY_CONDITIONS = new Set([
   "normal",
   "overweight",
 ]);
+const MIN_SNAKE_WEIGHT_G = 50;
+const MAX_SNAKE_WEIGHT_G = 5000;
 
 function isValidDateOnly(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -49,6 +51,10 @@ function validateProfilePayload(payload, { partial = false } = {}) {
     const currentWeightG = toPositiveInteger(payload.current_weight_g);
     if (!currentWeightG) {
       errors.push("current_weight_g musi być dodatnią liczbą całkowitą");
+    } else if (currentWeightG < MIN_SNAKE_WEIGHT_G) {
+      errors.push("Waga jest zbyt niska");
+    } else if (currentWeightG > MAX_SNAKE_WEIGHT_G) {
+      errors.push("Waga przekracza realistyczny zakres dla pytona królewskiego");
     } else {
       profile.current_weight_g = currentWeightG;
     }

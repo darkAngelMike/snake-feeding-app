@@ -23,6 +23,8 @@ const feedingStatusLabels = {
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://snake-backend-kb14.onrender.com";
+const MIN_SNAKE_WEIGHT_G = 50;
+const MAX_SNAKE_WEIGHT_G = 5000;
 
 function App() {
   const [session, setSession] = useState(null);
@@ -351,11 +353,25 @@ function App() {
       return;
     }
 
+    const currentWeightNumber = Number(currentWeightG);
+
+    if (currentWeightNumber < MIN_SNAKE_WEIGHT_G) {
+      setProfileMessage("Waga jest zbyt niska");
+      return;
+    }
+
+    if (currentWeightNumber > MAX_SNAKE_WEIGHT_G) {
+      setProfileMessage(
+        "Waga przekracza realistyczny zakres dla pytona królewskiego",
+      );
+      return;
+    }
+
     setSavingProfile(true);
 
     const payload = {
       name: snakeName,
-      current_weight_g: Number(currentWeightG),
+      current_weight_g: currentWeightNumber,
       life_stage: lifeStage,
       body_condition: bodyCondition,
     };
@@ -642,6 +658,8 @@ function App() {
               <input
                 id="currentWeightG"
                 type="number"
+                min={MIN_SNAKE_WEIGHT_G}
+                max={MAX_SNAKE_WEIGHT_G}
                 value={currentWeightG}
                 onChange={(e) => setCurrentWeightG(e.target.value)}
                 placeholder="np. 500"
@@ -658,6 +676,13 @@ function App() {
               />
             </div>
 
+            <div className="form-grid-note">
+              <p>
+                Zakres dla formularza: 50-5000 g. Jeśli wynik jest nietypowy,
+                sprawdź wagę przed zapisem.
+              </p>
+            </div>
+
             <div className="field">
               <div className="label-row">
                 <label htmlFor="lifeStage">Etap życia</label>
@@ -666,18 +691,16 @@ function App() {
                   <div className="field-help-panel">
                     <dl>
                       <dt>Młody po wykluciu</dt>
-                      <dd>ok. 0-3 miesiące, zwykle &lt; 150 g</dd>
+                      <dd>0-3 miesiące, zwykle &lt;150 g</dd>
                       <dt>Młody</dt>
-                      <dd>ok. 3-12 miesięcy, zwykle 150-600 g</dd>
+                      <dd>3-12 miesięcy, zwykle 150-600 g</dd>
                       <dt>Podrostek</dt>
-                      <dd>ok. 1-3 lata, zwykle 600-1500 g</dd>
+                      <dd>1-3 lata, zwykle 600-1500 g</dd>
                       <dt>Dorosły</dt>
-                      <dd>powyżej ~3 lat, zwykle &gt; 1500 g</dd>
+                      <dd>&gt;3 lata, zwykle &gt;1500 g</dd>
                     </dl>
                     <p>
-                      Samice są zazwyczaj większe i cięższe niż samce. Tempo
-                      wzrostu może się różnić. Jeśli nie masz pewności, wybierz
-                      etap najbardziej zbliżony do wagi węża.
+                      Samice są większe. Wybierz etap zbliżony do wagi węża.
                     </p>
                   </div>
                 </details>
@@ -685,7 +708,7 @@ function App() {
               <select
                 id="lifeStage"
                 value={lifeStage}
-                className={!lifeStage ? "select--placeholder" : undefined}
+                className={!lifeStage ? "is-placeholder" : undefined}
                 onChange={(e) => setLifeStage(e.target.value)}
               >
                 <option value="">Wybierz etap życia</option>
@@ -701,7 +724,7 @@ function App() {
               <select
                 id="bodyCondition"
                 value={bodyCondition}
-                className={!bodyCondition ? "select--placeholder" : undefined}
+                className={!bodyCondition ? "is-placeholder" : undefined}
                 onChange={(e) => setBodyCondition(e.target.value)}
               >
                 <option value="">Wybierz kondycję</option>
@@ -980,48 +1003,57 @@ function App() {
           </div>
 
           {result ? (
-            <div className="feeding-result">
-              <div>
-                <span>Najbliższa data</span>
-                <strong>{result.nextFeedingDate}</strong>
-              </div>
-              <div>
-                <span>Zakres karmówki</span>
-                <strong>
-                  {result.mealWeightMin}-{result.mealWeightMax} g
-                </strong>
-              </div>
-              <div>
-                <span>Cel karmówki</span>
-                <strong>{result.mealWeightTarget} g</strong>
-              </div>
-              <div>
-                <span>Interwał</span>
-                <strong>{result.feedingIntervalDays} dni</strong>
-              </div>
-              <p
-                className={
-                  result.status === "overdue" ||
-                  result.status === "vet_check_recommended"
-                    ? "status-pill status-pill--danger"
-                    : "status-pill"
-                }
-              >
-                {result.status === "vet_check_recommended"
-                  ? "Zalecana konsultacja"
-                  : result.status === "overdue"
-                  ? `Po terminie: ${result.daysOverdue} dni`
-                  : `Do karmienia: ${result.daysLeft} dni`}
-              </p>
-              {result.warnings?.length > 0 && (
-                <ul className="warning-list">
-                  {result.warnings.map((warning) => (
-                    <li key={warning}>{warning}</li>
-                  ))}
-                </ul>
+            <>
+              {!dashboardMessage && (
+                <div className="dashboard-snake" aria-hidden="true">
+                  <span>🐍</span>
+                </div>
               )}
-              {result.disclaimer && <p className="disclaimer">{result.disclaimer}</p>}
-            </div>
+              <div className="feeding-result">
+                <div>
+                  <span>Najbliższa data</span>
+                  <strong>{result.nextFeedingDate}</strong>
+                </div>
+                <div>
+                  <span>Zakres karmówki</span>
+                  <strong>
+                    {result.mealWeightMin}-{result.mealWeightMax} g
+                  </strong>
+                </div>
+                <div>
+                  <span>Cel karmówki</span>
+                  <strong>{result.mealWeightTarget} g</strong>
+                </div>
+                <div>
+                  <span>Interwał</span>
+                  <strong>{result.feedingIntervalDays} dni</strong>
+                </div>
+                <p
+                  className={
+                    result.status === "overdue" ||
+                    result.status === "vet_check_recommended"
+                      ? "status-pill status-pill--danger"
+                      : "status-pill"
+                  }
+                >
+                  {result.status === "vet_check_recommended"
+                    ? "Zalecana konsultacja"
+                    : result.status === "overdue"
+                    ? `Po terminie: ${result.daysOverdue} dni`
+                    : `Do karmienia: ${result.daysLeft} dni`}
+                </p>
+                {result.warnings?.length > 0 && (
+                  <ul className="warning-list">
+                    {result.warnings.map((warning) => (
+                      <li key={warning}>{warning}</li>
+                    ))}
+                  </ul>
+                )}
+                {result.disclaimer && (
+                  <p className="disclaimer">{result.disclaimer}</p>
+                )}
+              </div>
+            </>
           ) : (
             <p className="muted">
               Oblicz termin na podstawie ostatniego karmienia i aktualnej wagi.
