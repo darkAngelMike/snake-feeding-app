@@ -1,1 +1,4 @@
 .codex
+server/node_modules/
+server/database.db
+server/data.json
