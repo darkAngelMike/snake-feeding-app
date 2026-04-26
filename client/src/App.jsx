@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
+import "./App.css";
 import { supabase } from "./supabaseClient";
+
+const stageLabels = {
+  young: "Młody",
+  adult: "Dorosły",
+};
+
+const conditionLabels = {
+  underweight: "Za chudy",
+  normal: "Normalny",
+  overweight: "Za gruby",
+};
 
 function App() {
   const [session, setSession] = useState(null);
@@ -25,6 +37,13 @@ function App() {
   const [feedingSaved, setFeedingSaved] = useState(false);
 
   const [history, setHistory] = useState([]);
+  const [authMessage, setAuthMessage] = useState("");
+  const [profileMessage, setProfileMessage] = useState("");
+  const [feedingMessage, setFeedingMessage] = useState("");
+  const [dashboardMessage, setDashboardMessage] = useState("");
+  const [calculating, setCalculating] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingFeeding, setSavingFeeding] = useState(false);
 
   const isProfileComplete =
     profile?.name && profile?.weight && profile?.last_feeding_date;
@@ -129,22 +148,32 @@ function App() {
   }, [profile?.id]);
 
   const register = async () => {
+    setAuthMessage("");
+
     const { error } = await supabase.auth.signUp({
       email: getFakeEmail(),
       password,
     });
 
-    if (error) return alert(error.message);
-    alert("Konto utworzone");
+    if (error) {
+      setAuthMessage(error.message);
+      return;
+    }
+
+    setAuthMessage("Konto utworzone. Możesz się zalogować.");
   };
 
   const login = async () => {
+    setAuthMessage("");
+
     const { error } = await supabase.auth.signInWithPassword({
       email: getFakeEmail(),
       password,
     });
 
-    if (error) return alert(error.message);
+    if (error) {
+      setAuthMessage(error.message);
+    }
   };
 
   const logout = async () => {
@@ -156,10 +185,14 @@ function App() {
   };
 
   const saveProfile = async () => {
+    setProfileMessage("");
+
     if (!snakeName || !weight || !lastFeedingDate) {
-      alert("Uzupełnij imię, wagę i datę ostatniego karmienia");
+      setProfileMessage("Uzupełnij imię, wagę i datę ostatniego karmienia.");
       return;
     }
+
+    setSavingProfile(true);
 
     const payload = {
       user_id: session.user.id,
@@ -177,9 +210,11 @@ function App() {
           .eq("id", profile.id)
       : await supabase.from("snake_profiles").insert([payload]);
 
+    setSavingProfile(false);
+
     if (error) {
       console.error(error);
-      alert("Błąd zapisu profilu");
+      setProfileMessage("Nie udało się zapisać profilu. Spróbuj ponownie.");
       return;
     }
 
@@ -189,30 +224,44 @@ function App() {
   };
 
   const calculateFeeding = async () => {
-    const response = await fetch(
-      "https://snake-backend-kb14.onrender.com/calculate",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          feedingDate: profile.last_feeding_date,
-          weight: profile.weight,
-          stage: profile.stage,
-        }),
-      },
-    );
+    setDashboardMessage("");
+    setCalculating(true);
 
-    const data = await response.json();
-    setResult(data.result);
+    try {
+      const response = await fetch(
+        "https://snake-backend-kb14.onrender.com/calculate",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            feedingDate: profile.last_feeding_date,
+            weight: profile.weight,
+            stage: profile.stage,
+          }),
+        },
+      );
+
+      const data = await response.json();
+      setResult(data.result);
+    } catch (error) {
+      console.error(error);
+      setDashboardMessage("Nie udało się obliczyć kolejnego karmienia.");
+    }
+
+    setCalculating(false);
   };
 
   const saveFeeding = async () => {
+    setFeedingMessage("");
+
     if (!feedingDate || !feedingSnakeWeight || !mealWeight) {
-      alert("Uzupełnij datę karmienia, wagę węża i wagę pokarmu");
+      setFeedingMessage("Uzupełnij datę karmienia, wagę węża i wagę pokarmu.");
       return;
     }
+
+    setSavingFeeding(true);
 
     const { error } = await supabase.from("feedings").insert([
       {
@@ -227,7 +276,8 @@ function App() {
 
     if (error) {
       console.error(error);
-      alert("Błąd zapisu karmienia");
+      setSavingFeeding(false);
+      setFeedingMessage("Nie udało się zapisać karmienia. Spróbuj ponownie.");
       return;
     }
 
@@ -239,6 +289,7 @@ function App() {
       })
       .eq("id", profile.id);
 
+    setSavingFeeding(false);
     setFeedingSaved(true);
     setResult(null);
     setFeedingDate("");
@@ -249,255 +300,441 @@ function App() {
     await fetchHistory();
   };
 
-  if (loading) return <p style={{ textAlign: "center" }}>Ładowanie...</p>;
+  if (loading) {
+    return (
+      <main className="app-shell app-shell--center">
+        <section className="loading-card" aria-live="polite">
+          <div className="loading-mark" />
+          <p>Ładowanie panelu opieki...</p>
+        </section>
+      </main>
+    );
+  }
 
   if (!session) {
     return (
-      <main style={{ padding: 40, textAlign: "center" }}>
-        <h1>🐍 Tyson Snake App 🥊</h1>
-        <p>Ten wąż nie pyta. Ten wąż planuje karmienie.</p>
+      <main className="auth-page">
+        <section className="auth-hero" aria-label="Tyson Snake App">
+          <p className="eyebrow">Panel opiekuna gada</p>
+          <h1>Tyson Snake App</h1>
+          <p>
+            Profesjonalny rytm karmienia, aktualna waga i historia opieki w
+            jednym czytelnym miejscu.
+          </p>
+        </section>
 
-        <label>Nick</label>
-        <br />
-        <input value={nick} onChange={(e) => setNick(e.target.value)} />
+        <section className="auth-card">
+          <div className="section-heading">
+            <p className="eyebrow">Dostęp</p>
+            <h2>Zaloguj się lub utwórz konto</h2>
+          </div>
 
-        <br />
-        <br />
+          {authMessage && (
+            <p className="message message--info" role="status">
+              {authMessage}
+            </p>
+          )}
 
-        <label>Hasło</label>
-        <br />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+          <div className="field">
+            <label htmlFor="nick">Nick</label>
+            <input
+              id="nick"
+              value={nick}
+              onChange={(e) => setNick(e.target.value)}
+              placeholder="np. tyson"
+            />
+          </div>
 
-        <br />
-        <br />
+          <div className="field">
+            <label htmlFor="password">Hasło</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Wpisz hasło"
+            />
+          </div>
 
-        <button onClick={login}>Zaloguj</button>
-        <button onClick={register} style={{ marginLeft: 10 }}>
-          Zarejestruj
-        </button>
+          <div className="button-row">
+            <button className="button button--primary" onClick={login}>
+              Zaloguj
+            </button>
+            <button className="button button--secondary" onClick={register}>
+              Zarejestruj
+            </button>
+          </div>
+        </section>
       </main>
     );
   }
 
   if (!isProfileComplete || view === "profile") {
     return (
-      <main style={{ padding: 40, textAlign: "center" }}>
-        <h1>Profil węża 🐍</h1>
-        <p>Uzupełnij dane potrzebne do wyliczenia karmienia.</p>
-
-        <label>Imię węża</label>
-        <br />
-        <input
-          value={snakeName}
-          onChange={(e) => setSnakeName(e.target.value)}
-        />
-
-        <br />
-        <br />
-
-        <label>Waga węża (g)</label>
-        <br />
-        <input
-          type="number"
-          value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-        />
-
-        <br />
-        <br />
-
-        <label>Data ostatniego karmienia</label>
-        <br />
-        <input
-          type="date"
-          value={lastFeedingDate}
-          onChange={(e) => setLastFeedingDate(e.target.value)}
-        />
-
-        <br />
-        <br />
-
-        <label>Etap</label>
-        <br />
-        <select value={stage} onChange={(e) => setStage(e.target.value)}>
-          <option value="young">Young</option>
-          <option value="adult">Adult</option>
-        </select>
-
-        <br />
-        <br />
-
-        <label>Kondycja</label>
-        <br />
-        <select
-          value={bodyCondition}
-          onChange={(e) => setBodyCondition(e.target.value)}
-        >
-          <option value="underweight">Za chudy</option>
-          <option value="normal">Normalny</option>
-          <option value="overweight">Za gruby</option>
-        </select>
-
-        <br />
-        <br />
-
-        <button onClick={saveProfile}>Zapisz profil</button>
-
-        {isProfileComplete && (
-          <button
-            onClick={() => setView("dashboard")}
-            style={{ marginLeft: 10 }}
-          >
-            Wróć
+      <main className="app-shell">
+        <header className="topbar">
+          <div>
+            <p className="eyebrow">Konfiguracja</p>
+            <h1>Profil węża</h1>
+          </div>
+          <button className="button button--ghost" onClick={logout}>
+            Wyloguj
           </button>
-        )}
+        </header>
 
-        <br />
-        <br />
-        <button onClick={logout}>Wyloguj</button>
+        <section className="form-card form-card--wide">
+          <div className="section-heading">
+            <p className="eyebrow">Dane bazowe</p>
+            <h2>Uzupełnij informacje do planowania karmienia</h2>
+          </div>
+
+          {profileMessage && (
+            <p className="message message--error" role="alert">
+              {profileMessage}
+            </p>
+          )}
+
+          <div className="form-grid">
+            <div className="field">
+              <label htmlFor="snakeName">Imię węża</label>
+              <input
+                id="snakeName"
+                value={snakeName}
+                onChange={(e) => setSnakeName(e.target.value)}
+                placeholder="Tyson"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="weight">Waga węża (g)</label>
+              <input
+                id="weight"
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                placeholder="500"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="lastFeedingDate">Data ostatniego karmienia</label>
+              <input
+                id="lastFeedingDate"
+                type="date"
+                value={lastFeedingDate}
+                onChange={(e) => setLastFeedingDate(e.target.value)}
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="stage">Etap</label>
+              <select
+                id="stage"
+                value={stage}
+                onChange={(e) => setStage(e.target.value)}
+              >
+                <option value="young">Young</option>
+                <option value="adult">Adult</option>
+              </select>
+            </div>
+
+            <div className="field">
+              <label htmlFor="bodyCondition">Kondycja</label>
+              <select
+                id="bodyCondition"
+                value={bodyCondition}
+                onChange={(e) => setBodyCondition(e.target.value)}
+              >
+                <option value="underweight">Za chudy</option>
+                <option value="normal">Normalny</option>
+                <option value="overweight">Za gruby</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="button-row">
+            <button
+              className="button button--primary"
+              disabled={savingProfile}
+              onClick={saveProfile}
+            >
+              {savingProfile ? "Zapisywanie..." : "Zapisz profil"}
+            </button>
+
+            {isProfileComplete && (
+              <button
+                className="button button--secondary"
+                onClick={() => setView("dashboard")}
+              >
+                Wróć do panelu
+              </button>
+            )}
+          </div>
+        </section>
       </main>
     );
   }
 
   if (view === "registerFeeding") {
     return (
-      <main style={{ padding: 40, textAlign: "center" }}>
-        <h1>Zarejestruj karmienie 🐁</h1>
+      <main className="app-shell">
+        <header className="topbar">
+          <div>
+            <p className="eyebrow">Dziennik opieki</p>
+            <h1>Zarejestruj karmienie</h1>
+          </div>
+          <button
+            className="button button--ghost"
+            onClick={() => setView("dashboard")}
+          >
+            Wróć
+          </button>
+        </header>
 
-        <label>Data karmienia</label>
-        <br />
-        <input
-          type="date"
-          value={feedingDate}
-          onChange={(e) => setFeedingDate(e.target.value)}
-        />
+        <section className="form-card form-card--wide">
+          <div className="section-heading">
+            <p className="eyebrow">Nowy wpis</p>
+            <h2>Dodaj karmienie i aktualną wagę</h2>
+          </div>
 
-        <br />
-        <br />
+          {feedingMessage && (
+            <p className="message message--error" role="alert">
+              {feedingMessage}
+            </p>
+          )}
 
-        <label>Aktualna waga węża (g)</label>
-        <br />
-        <input
-          type="number"
-          value={feedingSnakeWeight}
-          onChange={(e) => setFeedingSnakeWeight(e.target.value)}
-        />
+          {feedingSaved && (
+            <p className="message message--success" role="status">
+              Karmienie zapisane w historii.
+            </p>
+          )}
 
-        <br />
-        <br />
+          <div className="form-grid">
+            <div className="field">
+              <label htmlFor="feedingDate">Data karmienia</label>
+              <input
+                id="feedingDate"
+                type="date"
+                value={feedingDate}
+                onChange={(e) => setFeedingDate(e.target.value)}
+              />
+            </div>
 
-        <label>Waga pokarmu (g)</label>
-        <br />
-        <input
-          type="number"
-          value={mealWeight}
-          onChange={(e) => setMealWeight(e.target.value)}
-        />
+            <div className="field">
+              <label htmlFor="feedingSnakeWeight">Aktualna waga węża (g)</label>
+              <input
+                id="feedingSnakeWeight"
+                type="number"
+                value={feedingSnakeWeight}
+                onChange={(e) => setFeedingSnakeWeight(e.target.value)}
+                placeholder={String(profile.weight || "")}
+              />
+            </div>
 
-        <br />
-        <br />
+            <div className="field">
+              <label htmlFor="mealWeight">Waga pokarmu (g)</label>
+              <input
+                id="mealWeight"
+                type="number"
+                value={mealWeight}
+                onChange={(e) => setMealWeight(e.target.value)}
+                placeholder={result?.mealWeight ? String(result.mealWeight) : ""}
+              />
+            </div>
+          </div>
 
-        <button onClick={saveFeeding}>Zapisz karmienie</button>
-        <button onClick={() => setView("dashboard")} style={{ marginLeft: 10 }}>
-          Wróć
-        </button>
-
-        {feedingSaved && (
-          <div style={{ marginTop: 20 }}>
-            <p>Karmienie zapisane 🐍</p>
-            <button onClick={() => setView("history")}>
-              Historia karmienia
+          <div className="button-row">
+            <button
+              className="button button--primary"
+              disabled={savingFeeding}
+              onClick={saveFeeding}
+            >
+              {savingFeeding ? "Zapisywanie..." : "Zapisz karmienie"}
+            </button>
+            <button
+              className="button button--secondary"
+              onClick={() => setView("history")}
+            >
+              Historia karmień
             </button>
           </div>
-        )}
+        </section>
       </main>
     );
   }
 
   if (view === "history") {
     return (
-      <main style={{ padding: 40, textAlign: "center" }}>
-        <h1>Historia karmienia 📜</h1>
+      <main className="app-shell">
+        <header className="topbar">
+          <div>
+            <p className="eyebrow">Historia</p>
+            <h1>Karmienia</h1>
+          </div>
+          <button
+            className="button button--ghost"
+            onClick={() => setView("dashboard")}
+          >
+            Wróć
+          </button>
+        </header>
 
-        {history.length === 0 ? (
-          <p>Brak danych</p>
-        ) : (
-          <table border="1" cellPadding="8" style={{ margin: "0 auto" }}>
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Waga węża</th>
-                <th>Waga pokarmu</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
+        <section className="timeline-card">
+          {history.length === 0 ? (
+            <div className="empty-state">
+              <p className="eyebrow">Brak wpisów</p>
+              <h2>Historia pojawi się po pierwszym karmieniu</h2>
+              <button
+                className="button button--primary"
+                onClick={() => setView("registerFeeding")}
+              >
+                Dodaj karmienie
+              </button>
+            </div>
+          ) : (
+            <div className="timeline">
               {history.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.feeding_date}</td>
-                  <td>{item.snake_weight} g</td>
-                  <td>{item.meal_weight} g</td>
-                  <td>{item.status}</td>
-                </tr>
+                <article className="timeline-item" key={item.id}>
+                  <div className="timeline-dot" />
+                  <div>
+                    <p className="timeline-date">{item.feeding_date}</p>
+                    <h2>{item.meal_weight} g pokarmu</h2>
+                    <div className="meta-grid">
+                      <span>Waga węża: {item.snake_weight} g</span>
+                      <span>Status: {item.status}</span>
+                    </div>
+                  </div>
+                </article>
               ))}
-            </tbody>
-          </table>
-        )}
-
-        <br />
-        <button onClick={() => setView("dashboard")}>Wróć</button>
+            </div>
+          )}
+        </section>
       </main>
     );
   }
 
   return (
-    <main style={{ padding: 40, textAlign: "center" }}>
-      <div style={{ textAlign: "right" }}>
-        <button onClick={() => setView("profile")}>Profil węża</button>
-        <button onClick={logout} style={{ marginLeft: 10 }}>
-          Wyloguj
-        </button>
-      </div>
+    <main className="app-shell">
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">Panel opiekuna</p>
+          <h1>{profile.name}</h1>
+        </div>
 
-      <h1>Witaj, {profile.name} 🐍</h1>
-      <p>Dane kompletne — możesz liczyć karmienie.</p>
+        <nav className="topbar-actions" aria-label="Akcje panelu">
+          <button
+            className="button button--secondary"
+            onClick={() => setView("profile")}
+          >
+            Profil
+          </button>
+          <button className="button button--ghost" onClick={logout}>
+            Wyloguj
+          </button>
+        </nav>
+      </header>
 
-      <button onClick={calculateFeeding}>Oblicz datę karmienia</button>
+      <section className="dashboard-grid">
+        <article className="summary-card summary-card--main">
+          <div className="section-heading">
+            <p className="eyebrow">Podsumowanie</p>
+            <h2>Aktualny stan węża</h2>
+          </div>
 
-      {result && (
-        <section style={{ marginTop: 20 }}>
-          <h2>Wynik</h2>
-          <p>Rekomendowana waga pokarmu: {result.mealWeight} g</p>
-          <p>Najbliższa data karmienia: {result.nextFeedingDate}</p>
-          <p>Czy po terminie: {result.isOverdue ? "Tak" : "Nie"}</p>
+          <div className="stats-grid">
+            <div className="stat">
+              <span>Waga</span>
+              <strong>{profile.weight} g</strong>
+            </div>
+            <div className="stat">
+              <span>Etap</span>
+              <strong>{stageLabels[profile.stage] || profile.stage}</strong>
+            </div>
+            <div className="stat">
+              <span>Kondycja</span>
+              <strong>
+                {conditionLabels[profile.body_condition] ||
+                  profile.body_condition}
+              </strong>
+            </div>
+            <div className="stat">
+              <span>Ostatnie karmienie</span>
+              <strong>{profile.last_feeding_date}</strong>
+            </div>
+          </div>
+        </article>
 
-          {result.isOverdue ? (
-            <p style={{ color: "red", fontWeight: "bold" }}>
-              ⚠️ Dni po terminie: {result.daysOverdue}
+        <article className="summary-card next-feeding-card">
+          <div className="section-heading">
+            <p className="eyebrow">Następne karmienie</p>
+            <h2>Plan żywienia</h2>
+          </div>
+
+          {dashboardMessage && (
+            <p className="message message--error" role="alert">
+              {dashboardMessage}
             </p>
-          ) : (
-            <p>Dni do karmienia: {result.daysLeft}</p>
           )}
 
-          <button onClick={() => setView("registerFeeding")}>
-            Zarejestruj karmienie
-          </button>
-        </section>
-      )}
+          {result ? (
+            <div className="feeding-result">
+              <div>
+                <span>Najbliższa data</span>
+                <strong>{result.nextFeedingDate}</strong>
+              </div>
+              <div>
+                <span>Rekomendowany pokarm</span>
+                <strong>{result.mealWeight} g</strong>
+              </div>
+              <p
+                className={
+                  result.isOverdue
+                    ? "status-pill status-pill--danger"
+                    : "status-pill"
+                }
+              >
+                {result.isOverdue
+                  ? `Po terminie: ${result.daysOverdue} dni`
+                  : `Do karmienia: ${result.daysLeft} dni`}
+              </p>
+            </div>
+          ) : (
+            <p className="muted">
+              Oblicz termin na podstawie ostatniego karmienia i aktualnej wagi.
+            </p>
+          )}
 
-      <br />
-      <br />
+          <div className="button-row">
+            <button
+              className="button button--primary"
+              disabled={calculating}
+              onClick={calculateFeeding}
+            >
+              {calculating ? "Obliczanie..." : "Oblicz termin"}
+            </button>
+            <button
+              className="button button--secondary"
+              onClick={() => setView("registerFeeding")}
+            >
+              Zarejestruj karmienie
+            </button>
+          </div>
+        </article>
+      </section>
 
-      <button onClick={() => setView("registerFeeding")}>
-        Zarejestruj karmienie
-      </button>
-      <button onClick={() => setView("history")} style={{ marginLeft: 10 }}>
-        Historia karmienia
-      </button>
+      <section className="quick-actions">
+        <button
+          className="action-tile"
+          onClick={() => setView("registerFeeding")}
+        >
+          <span>Dodaj wpis</span>
+          <strong>Nowe karmienie</strong>
+        </button>
+        <button className="action-tile" onClick={() => setView("history")}>
+          <span>Przegląd</span>
+          <strong>Historia karmień</strong>
+        </button>
+      </section>
     </main>
   );
 }
