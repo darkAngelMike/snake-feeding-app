@@ -1,35 +1,48 @@
 const supabase = require("../supabaseClient");
 
-async function saveFeeding(data) {
+async function saveCalculation(data) {
   const {
-    feedingDate,
-    weight,
-    stage,
-    mealWeight,
+    user_id,
+    snake_id,
+    weight_g,
+    current_weight_g,
+    life_stage,
+    body_condition,
+    mealWeightMin,
+    mealWeightMax,
+    mealWeightTarget,
+    feedingIntervalDays,
     nextFeedingDate,
-    isOverdue,
-    daysLeft,
+    status,
+    warnings,
+    disclaimer,
   } = data;
 
-  const { error } = await supabase.from("feedings").insert([
+  const { error } = await supabase.from("feeding_calculations").insert([
     {
-      feedingdate: feedingDate,
-      weight,
-      stage,
-      mealweight: mealWeight,
-      nextfeedingdate: nextFeedingDate,
-      isoverdue: isOverdue,
-      daysleft: daysLeft,
-      savedat: new Date().toISOString(),
+      user_id,
+      snake_id,
+      snake_weight_g: Number(weight_g ?? current_weight_g),
+      life_stage,
+      body_condition,
+      meal_weight_min: mealWeightMin,
+      meal_weight_max: mealWeightMax,
+      meal_weight_target: mealWeightTarget,
+      feeding_interval_days: feedingIntervalDays,
+      next_feeding_date: nextFeedingDate,
+      planner_status: status,
+      warnings: warnings || [],
+      disclaimer,
+      input_snapshot: data,
     },
   ]);
 
   if (error) {
     console.error(error);
-    throw new Error("Błąd zapisu do bazy");
+    throw new Error("Błąd zapisu kalkulacji do bazy");
   }
 
-  return { message: "Zapisano do Supabase" };
+  return { message: "Zapisano kalkulację do Supabase" };
 }
 
 async function getHistory() {
@@ -47,6 +60,6 @@ async function getHistory() {
 }
 
 module.exports = {
-  saveFeeding,
+  saveCalculation,
   getHistory,
 };

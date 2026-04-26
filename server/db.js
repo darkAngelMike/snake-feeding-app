@@ -7,14 +7,11 @@ db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS feedings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      feedingDate TEXT,
-      weight INTEGER,
-      stage TEXT,
-      mealWeight INTEGER,
-      nextFeedingDate TEXT,
-      isOverdue BOOLEAN,
-      daysLeft INTEGER,
-      savedAt TEXT
+      feeding_date TEXT,
+      snake_weight_g INTEGER,
+      life_stage TEXT,
+      meal_weight_g INTEGER,
+      created_at TEXT
     )
   `);
 });

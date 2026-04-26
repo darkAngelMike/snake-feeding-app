@@ -3,7 +3,9 @@ import "./App.css";
 import { supabase } from "./supabaseClient";
 
 const stageLabels = {
-  young: "Młody",
+  hatchling: "Hatchling",
+  juvenile: "Juvenile",
+  subadult: "Subadult",
   adult: "Dorosły",
 };
 
@@ -24,10 +26,13 @@ function App() {
   const [profile, setProfile] = useState(null);
 
   const [snakeName, setSnakeName] = useState("");
-  const [weight, setWeight] = useState("");
-  const [stage, setStage] = useState("adult");
+  const [currentWeightG, setCurrentWeightG] = useState("");
+  const [lifeStage, setLifeStage] = useState("adult");
   const [lastFeedingDate, setLastFeedingDate] = useState("");
   const [bodyCondition, setBodyCondition] = useState("normal");
+  const [refusedMealsCount, setRefusedMealsCount] = useState("0");
+  const [isShedding, setIsShedding] = useState(false);
+  const [lastMealWeightG, setLastMealWeightG] = useState("");
 
   const [result, setResult] = useState(null);
 
@@ -46,7 +51,9 @@ function App() {
   const [savingFeeding, setSavingFeeding] = useState(false);
 
   const isProfileComplete =
-    profile?.name && profile?.weight && profile?.last_feeding_date;
+    profile?.name &&
+    profile?.current_weight_g &&
+    profile?.last_successful_feeding_date;
 
   const getFakeEmail = () => `${nick}@snake.local`;
 
@@ -55,9 +62,9 @@ function App() {
 
     if (data) {
       setSnakeName(data.name || "");
-      setWeight(data.weight || "");
-      setStage(data.stage || "adult");
-      setLastFeedingDate(data.last_feeding_date || "");
+      setCurrentWeightG(data.current_weight_g || "");
+      setLifeStage(data.life_stage || "adult");
+      setLastFeedingDate(data.last_successful_feeding_date || "");
       setBodyCondition(data.body_condition || "normal");
     }
   };
@@ -187,7 +194,7 @@ function App() {
   const saveProfile = async () => {
     setProfileMessage("");
 
-    if (!snakeName || !weight || !lastFeedingDate) {
+    if (!snakeName || !currentWeightG || !lastFeedingDate) {
       setProfileMessage("Uzupełnij imię, wagę i datę ostatniego karmienia.");
       return;
     }
@@ -197,9 +204,9 @@ function App() {
     const payload = {
       user_id: session.user.id,
       name: snakeName,
-      weight: Number(weight),
-      stage,
-      last_feeding_date: lastFeedingDate,
+      current_weight_g: Number(currentWeightG),
+      life_stage: lifeStage,
+      last_successful_feeding_date: lastFeedingDate,
       body_condition: bodyCondition,
     };
 
@@ -236,14 +243,25 @@ function App() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            feedingDate: profile.last_feeding_date,
-            weight: profile.weight,
-            stage: profile.stage,
+            user_id: session.user.id,
+            snake_id: profile.id,
+            last_successful_feeding_date: profile.last_successful_feeding_date,
+            weight_g: profile.current_weight_g,
+            life_stage: lifeStage,
+            body_condition: bodyCondition,
+            refused_meals_count: Number(refusedMealsCount || 0),
+            is_shedding: isShedding,
+            last_meal_weight_g: lastMealWeightG ? Number(lastMealWeightG) : null,
           }),
         },
       );
 
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Błąd kalkulacji");
+      }
+
       setResult(data.result);
     } catch (error) {
       console.error(error);
@@ -268,8 +286,8 @@ function App() {
         user_id: session.user.id,
         snake_id: profile.id,
         feeding_date: feedingDate,
-        snake_weight: Number(feedingSnakeWeight),
-        meal_weight: Number(mealWeight),
+        snake_weight_g: Number(feedingSnakeWeight),
+        meal_weight_g: Number(mealWeight),
         status: "ok",
       },
     ]);
@@ -284,8 +302,8 @@ function App() {
     await supabase
       .from("snake_profiles")
       .update({
-        weight: Number(feedingSnakeWeight),
-        last_feeding_date: feedingDate,
+        current_weight_g: Number(feedingSnakeWeight),
+        last_successful_feeding_date: feedingDate,
       })
       .eq("id", profile.id);
 
@@ -406,18 +424,18 @@ function App() {
             </div>
 
             <div className="field">
-              <label htmlFor="weight">Waga węża (g)</label>
+              <label htmlFor="currentWeightG">Waga węża (g)</label>
               <input
-                id="weight"
+                id="currentWeightG"
                 type="number"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
+                value={currentWeightG}
+                onChange={(e) => setCurrentWeightG(e.target.value)}
                 placeholder="500"
               />
             </div>
 
             <div className="field">
-              <label htmlFor="lastFeedingDate">Data ostatniego karmienia</label>
+              <label htmlFor="lastFeedingDate">Data ostatniego udanego karmienia</label>
               <input
                 id="lastFeedingDate"
                 type="date"
@@ -427,13 +445,15 @@ function App() {
             </div>
 
             <div className="field">
-              <label htmlFor="stage">Etap</label>
+              <label htmlFor="lifeStage">Etap</label>
               <select
-                id="stage"
-                value={stage}
-                onChange={(e) => setStage(e.target.value)}
+                id="lifeStage"
+                value={lifeStage}
+                onChange={(e) => setLifeStage(e.target.value)}
               >
-                <option value="young">Young</option>
+                <option value="hatchling">Hatchling</option>
+                <option value="juvenile">Juvenile</option>
+                <option value="subadult">Subadult</option>
                 <option value="adult">Adult</option>
               </select>
             </div>
@@ -527,7 +547,7 @@ function App() {
                 type="number"
                 value={feedingSnakeWeight}
                 onChange={(e) => setFeedingSnakeWeight(e.target.value)}
-                placeholder={String(profile.weight || "")}
+                placeholder={String(profile.current_weight_g || "")}
               />
             </div>
 
@@ -538,7 +558,11 @@ function App() {
                 type="number"
                 value={mealWeight}
                 onChange={(e) => setMealWeight(e.target.value)}
-                placeholder={result?.mealWeight ? String(result.mealWeight) : ""}
+                placeholder={
+                  result?.mealWeightTarget
+                    ? String(result.mealWeightTarget)
+                    : ""
+                }
               />
             </div>
           </div>
@@ -598,9 +622,9 @@ function App() {
                   <div className="timeline-dot" />
                   <div>
                     <p className="timeline-date">{item.feeding_date}</p>
-                    <h2>{item.meal_weight} g pokarmu</h2>
+                    <h2>{item.meal_weight_g} g pokarmu</h2>
                     <div className="meta-grid">
-                      <span>Waga węża: {item.snake_weight} g</span>
+                      <span>Waga węża: {item.snake_weight_g} g</span>
                       <span>Status: {item.status}</span>
                     </div>
                   </div>
@@ -644,22 +668,19 @@ function App() {
           <div className="stats-grid">
             <div className="stat">
               <span>Waga</span>
-              <strong>{profile.weight} g</strong>
+              <strong>{profile.current_weight_g} g</strong>
             </div>
             <div className="stat">
               <span>Etap</span>
-              <strong>{stageLabels[profile.stage] || profile.stage}</strong>
+              <strong>{stageLabels[lifeStage] || lifeStage}</strong>
             </div>
             <div className="stat">
               <span>Kondycja</span>
-              <strong>
-                {conditionLabels[profile.body_condition] ||
-                  profile.body_condition}
-              </strong>
+              <strong>{conditionLabels[bodyCondition] || bodyCondition}</strong>
             </div>
             <div className="stat">
               <span>Ostatnie karmienie</span>
-              <strong>{profile.last_feeding_date}</strong>
+              <strong>{profile.last_successful_feeding_date}</strong>
             </div>
           </div>
         </article>
@@ -676,6 +697,41 @@ function App() {
             </p>
           )}
 
+          <div className="context-grid">
+            <div className="field">
+              <label htmlFor="refusedMealsCount">Odmowy karmienia</label>
+              <input
+                id="refusedMealsCount"
+                min="0"
+                type="number"
+                value={refusedMealsCount}
+                onChange={(e) => setRefusedMealsCount(e.target.value)}
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="lastMealWeightG">Ostatnia karmówka (g)</label>
+              <input
+                id="lastMealWeightG"
+                min="0"
+                type="number"
+                value={lastMealWeightG}
+                onChange={(e) => setLastMealWeightG(e.target.value)}
+                placeholder="Opcjonalnie"
+              />
+            </div>
+
+            <label className="checkbox-field" htmlFor="isShedding">
+              <input
+                id="isShedding"
+                type="checkbox"
+                checked={isShedding}
+                onChange={(e) => setIsShedding(e.target.checked)}
+              />
+              Wąż jest w trakcie wylinki
+            </label>
+          </div>
+
           {result ? (
             <div className="feeding-result">
               <div>
@@ -683,20 +739,41 @@ function App() {
                 <strong>{result.nextFeedingDate}</strong>
               </div>
               <div>
-                <span>Rekomendowany pokarm</span>
-                <strong>{result.mealWeight} g</strong>
+                <span>Zakres karmówki</span>
+                <strong>
+                  {result.mealWeightMin}-{result.mealWeightMax} g
+                </strong>
+              </div>
+              <div>
+                <span>Cel karmówki</span>
+                <strong>{result.mealWeightTarget} g</strong>
+              </div>
+              <div>
+                <span>Interwał</span>
+                <strong>{result.feedingIntervalDays} dni</strong>
               </div>
               <p
                 className={
-                  result.isOverdue
+                  result.status === "overdue" ||
+                  result.status === "vet_check_recommended"
                     ? "status-pill status-pill--danger"
                     : "status-pill"
                 }
               >
-                {result.isOverdue
+                {result.status === "vet_check_recommended"
+                  ? "Zalecana konsultacja"
+                  : result.status === "overdue"
                   ? `Po terminie: ${result.daysOverdue} dni`
                   : `Do karmienia: ${result.daysLeft} dni`}
               </p>
+              {result.warnings?.length > 0 && (
+                <ul className="warning-list">
+                  {result.warnings.map((warning) => (
+                    <li key={warning}>{warning}</li>
+                  ))}
+                </ul>
+              )}
+              {result.disclaimer && <p className="disclaimer">{result.disclaimer}</p>}
             </div>
           ) : (
             <p className="muted">

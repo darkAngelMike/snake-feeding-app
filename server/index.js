@@ -1,6 +1,6 @@
 const { calculateFeeding } = require("./services/feedingService");
 const express = require("express");
-const { saveFeeding, getHistory } = require("./services/historyService");
+const { saveCalculation, getHistory } = require("./services/historyService");
 const cors = require("cors");
 
 const app = express();
@@ -18,10 +18,14 @@ app.post("/calculate", (req, res) => {
   try {
     const result = calculateFeeding(req.body);
 
-    saveFeeding({
-      ...req.body,
-      ...result.result,
-    });
+    if (req.body.user_id && req.body.snake_id) {
+      saveCalculation({
+        ...req.body,
+        ...result.result,
+      }).catch((saveError) => {
+        console.error(saveError);
+      });
+    }
 
     res.json(result);
   } catch (error) {

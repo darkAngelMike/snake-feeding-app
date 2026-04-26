@@ -2,7 +2,8 @@ POST http://localhost:3000/calculate
 Content-Type: application/json
 
 {
-  "feedingDate": "2024-04-20",
-  "weight": 500,
-  "stage": "adult"
+  "feeding_date": "2024-04-20",
+  "weight_g": 500,
+  "life_stage": "adult",
+  "body_condition": "normal"
 }
