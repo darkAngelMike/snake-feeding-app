@@ -1,6 +1,7 @@
 const feedingsRepository = require("../repositories/feedingsRepository");
 const snakeProfilesRepository = require("../repositories/snakeProfilesRepository");
 const logger = require("../utils/logger");
+const { isPermissionError } = require("../utils/supabaseErrors");
 
 const VALID_FEEDING_STATUSES = new Set(["success", "refused", "skipped"]);
 const LEGACY_STATUS_MAP = {
@@ -105,12 +106,14 @@ async function getFeedings(req, res) {
   }
 
   const { data: snakeProfile, error: snakeProfileError } =
-    await snakeProfilesRepository.findById(snakeId);
+    await snakeProfilesRepository.findById(snakeId, req.supabase);
 
   if (snakeProfileError) {
     logger.error("Nie udało się zweryfikować profilu węża", snakeProfileError);
-    return res.status(500).json({
-      error: "Błąd weryfikacji profilu węża",
+    return res.status(isPermissionError(snakeProfileError) ? 403 : 500).json({
+      error: isPermissionError(snakeProfileError)
+        ? "Brak dostępu do profilu węża"
+        : "Błąd weryfikacji profilu węża",
     });
   }
 
@@ -120,15 +123,20 @@ async function getFeedings(req, res) {
     });
   }
 
-  const { data, error } = await feedingsRepository.getBySnakeId(snakeId);
+  const { data, error } = await feedingsRepository.getBySnakeId(
+    snakeId,
+    req.supabase,
+  );
 
   if (error) {
     logger.error("Nie udało się pobrać karmień", {
       error,
       snake_id: snakeId,
     });
-    return res.status(500).json({
-      error: "Błąd pobierania karmień",
+    return res.status(isPermissionError(error) ? 403 : 500).json({
+      error: isPermissionError(error)
+        ? "Brak dostępu do karmień"
+        : "Błąd pobierania karmień",
     });
   }
 
@@ -139,6 +147,7 @@ async function updateSnakeProfileAfterFeeding(feeding) {
   const weightUpdate = await snakeProfilesRepository.updateWeight(
     feeding.snake_id,
     feeding.snake_weight_g,
+    feeding.supabaseClient,
   );
 
   if (weightUpdate.error) {
@@ -159,6 +168,7 @@ async function updateSnakeProfileAfterFeeding(feeding) {
     await snakeProfilesRepository.updateLastFeedingDate(
       feeding.snake_id,
       feeding.feeding_date,
+      feeding.supabaseClient,
     );
 
   if (lastFeedingUpdate.error) {
@@ -188,12 +198,14 @@ async function createFeeding(req, res) {
   }
 
   const { data: snakeProfile, error: snakeProfileError } =
-    await snakeProfilesRepository.findById(feeding.snake_id);
+    await snakeProfilesRepository.findById(feeding.snake_id, req.supabase);
 
   if (snakeProfileError) {
     logger.error("Nie udało się zweryfikować profilu węża", snakeProfileError);
-    return res.status(500).json({
-      error: "Błąd weryfikacji profilu węża",
+    return res.status(isPermissionError(snakeProfileError) ? 403 : 500).json({
+      error: isPermissionError(snakeProfileError)
+        ? "Brak dostępu do profilu węża"
+        : "Błąd weryfikacji profilu węża",
     });
   }
 
@@ -203,16 +215,24 @@ async function createFeeding(req, res) {
     });
   }
 
-  const { data, error } = await feedingsRepository.insertFeeding(feeding);
+  const { data, error } = await feedingsRepository.insertFeeding(
+    feeding,
+    req.supabase,
+  );
 
   if (error) {
     logger.error("Nie udało się zapisać karmienia", error);
-    return res.status(500).json({
-      error: "Nie udało się zapisać karmienia",
+    return res.status(isPermissionError(error) ? 403 : 500).json({
+      error: isPermissionError(error)
+        ? "Brak uprawnień do zapisu karmienia"
+        : "Nie udało się zapisać karmienia",
     });
   }
 
-  const profileUpdated = await updateSnakeProfileAfterFeeding(feeding);
+  const profileUpdated = await updateSnakeProfileAfterFeeding({
+    ...feeding,
+    supabaseClient: req.supabase,
+  });
 
   return res.status(201).json({
     success: true,

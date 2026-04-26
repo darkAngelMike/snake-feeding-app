@@ -1,8 +1,8 @@
 const { getSupabaseClient } = require("../config/supabaseClient");
 
-async function findByUserId(userId) {
+async function findByUserId(userId, client = getSupabaseClient()) {
   try {
-    return await getSupabaseClient()
+    return await client
       .from("snake_profiles")
       .select("*")
       .eq("user_id", userId);
@@ -11,9 +11,9 @@ async function findByUserId(userId) {
   }
 }
 
-async function findById(id) {
+async function findById(id, client = getSupabaseClient()) {
   try {
-    return await getSupabaseClient()
+    return await client
       .from("snake_profiles")
       .select("*")
       .eq("id", id)
@@ -23,9 +23,9 @@ async function findById(id) {
   }
 }
 
-async function createProfile(payload) {
+async function createProfile(payload, client = getSupabaseClient()) {
   try {
-    return await getSupabaseClient()
+    return await client
       .from("snake_profiles")
       .insert([payload])
       .select()
@@ -35,9 +35,9 @@ async function createProfile(payload) {
   }
 }
 
-async function updateProfile(id, payload) {
+async function updateProfile(id, payload, client = getSupabaseClient()) {
   try {
-    return await getSupabaseClient()
+    return await client
       .from("snake_profiles")
       .update(payload)
       .eq("id", id)
@@ -48,9 +48,9 @@ async function updateProfile(id, payload) {
   }
 }
 
-async function updateWeight(id, weightG) {
+async function updateWeight(id, weightG, client = getSupabaseClient()) {
   try {
-    return await getSupabaseClient()
+    return await client
       .from("snake_profiles")
       .update({ current_weight_g: weightG })
       .eq("id", id)
@@ -61,9 +61,13 @@ async function updateWeight(id, weightG) {
   }
 }
 
-async function updateLastFeedingDate(id, feedingDate) {
+async function updateLastFeedingDate(
+  id,
+  feedingDate,
+  client = getSupabaseClient(),
+) {
   try {
-    return await getSupabaseClient()
+    return await client
       .from("snake_profiles")
       .update({ last_successful_feeding_date: feedingDate })
       .eq("id", id)

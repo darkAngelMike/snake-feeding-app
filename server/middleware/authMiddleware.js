@@ -1,4 +1,7 @@
-const { getSupabaseClient } = require("../config/supabaseClient");
+const {
+  createSupabaseClientForToken,
+  getSupabaseClient,
+} = require("../config/supabaseClient");
 const logger = require("../utils/logger");
 
 function getBearerToken(req) {
@@ -17,29 +20,37 @@ function getBearerToken(req) {
 }
 
 async function requireAuth(req, res, next) {
-  const token = getBearerToken(req);
+  try {
+    const token = getBearerToken(req);
 
-  if (!token) {
-    logger.error("Brak tokena autoryzacji");
-    return res.status(401).json({
-      error: "Wymagane uwierzytelnienie",
+    if (!token) {
+      logger.error("Brak tokena autoryzacji");
+      return res.status(401).json({
+        error: "Wymagane uwierzytelnienie",
+      });
+    }
+
+    const { data, error } = await getSupabaseClient().auth.getUser(token);
+
+    if (error || !data?.user?.id) {
+      logger.error("Niepoprawny token autoryzacji", error);
+      return res.status(401).json({
+        error: "Niepoprawny token autoryzacji",
+      });
+    }
+
+    req.user = {
+      id: data.user.id,
+    };
+    req.supabase = createSupabaseClientForToken(token);
+
+    return next();
+  } catch (error) {
+    logger.error("Błąd middleware autoryzacji", error);
+    return res.status(500).json({
+      error: "Błąd autoryzacji",
     });
   }
-
-  const { data, error } = await getSupabaseClient().auth.getUser(token);
-
-  if (error || !data?.user?.id) {
-    logger.error("Niepoprawny token autoryzacji", error);
-    return res.status(401).json({
-      error: "Niepoprawny token autoryzacji",
-    });
-  }
-
-  req.user = {
-    id: data.user.id,
-  };
-
-  return next();
 }
 
 module.exports = {

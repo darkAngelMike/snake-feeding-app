@@ -1,6 +1,6 @@
 const { getSupabaseClient } = require("../config/supabaseClient");
 
-async function createCalculation(data) {
+async function createCalculation(data, client = getSupabaseClient()) {
   const {
     user_id,
     snake_id,
@@ -36,7 +36,7 @@ async function createCalculation(data) {
   };
 
   try {
-    return await getSupabaseClient()
+    return await client
       .from("feeding_calculations")
       .insert([payload])
       .select()

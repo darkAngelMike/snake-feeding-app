@@ -1,8 +1,8 @@
 const { getSupabaseClient } = require("../config/supabaseClient");
 
-async function getHistory() {
+async function getHistory(client = getSupabaseClient()) {
   try {
-    return await getSupabaseClient()
+    return await client
       .from("feedings")
       .select("*")
       .order("id", { ascending: false });
@@ -11,9 +11,9 @@ async function getHistory() {
   }
 }
 
-async function getBySnakeId(snakeId) {
+async function getBySnakeId(snakeId, client = getSupabaseClient()) {
   try {
-    return await getSupabaseClient()
+    return await client
       .from("feedings")
       .select("*")
       .eq("snake_id", snakeId)
@@ -23,9 +23,9 @@ async function getBySnakeId(snakeId) {
   }
 }
 
-async function insertFeeding(payload) {
+async function insertFeeding(payload, client = getSupabaseClient()) {
   try {
-    return await getSupabaseClient()
+    return await client
       .from("feedings")
       .insert([payload])
       .select()

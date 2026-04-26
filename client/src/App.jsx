@@ -64,6 +64,17 @@ function App() {
     Authorization: `Bearer ${session.access_token}`,
   });
 
+  const parseApiResponse = async (response) => {
+    const contentType = response.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      return response.json();
+    }
+
+    await response.text();
+    throw new Error("Backend zwrócił odpowiedź inną niż JSON.");
+  };
+
   const applyProfileData = (data) => {
     setProfile(data);
 
@@ -79,19 +90,22 @@ function App() {
   const fetchProfile = async () => {
     if (!session) return;
 
-    const { data, error } = await supabase
-      .from("snake_profiles")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
+    try {
+      const response = await fetch(`${API_BASE_URL}/snake-profiles`, {
+        headers: getApiHeaders(),
+      });
 
-    if (error) {
+      const data = await parseApiResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error || "Nie udało się pobrać profilu.");
+      }
+
+      applyProfileData(data[0] || null);
+    } catch (error) {
       console.error(error);
       setProfile(null);
-      return;
     }
-
-    applyProfileData(data);
   };
 
   const fetchHistory = async () => {
@@ -127,19 +141,24 @@ function App() {
   useEffect(() => {
     if (!session) return;
 
-    supabase
-      .from("snake_profiles")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error) {
-          console.error(error);
-          setProfile(null);
-          return;
+    fetch(`${API_BASE_URL}/snake-profiles`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    })
+      .then(async (response) => {
+        const data = await parseApiResponse(response);
+
+        if (!response.ok) {
+          throw new Error(data.error || "Nie udało się pobrać profilu.");
         }
 
-        applyProfileData(data);
+        applyProfileData(data[0] || null);
+      })
+      .catch((error) => {
+        console.error(error);
+        setProfile(null);
       });
   }, [session]);
 
@@ -201,36 +220,49 @@ function App() {
   const saveProfile = async () => {
     setProfileMessage("");
 
-    if (!snakeName || !currentWeightG || !lastFeedingDate) {
-      setProfileMessage("Uzupełnij imię, wagę i datę ostatniego karmienia.");
+    if (!snakeName || !currentWeightG) {
+      setProfileMessage("Uzupełnij imię i wagę węża.");
       return;
     }
 
     setSavingProfile(true);
 
     const payload = {
-      user_id: session.user.id,
       name: snakeName,
       current_weight_g: Number(currentWeightG),
       life_stage: lifeStage,
-      last_successful_feeding_date: lastFeedingDate,
       body_condition: bodyCondition,
     };
 
-    const { error } = profile
-      ? await supabase
-          .from("snake_profiles")
-          .update(payload)
-          .eq("id", profile.id)
-      : await supabase.from("snake_profiles").insert([payload]);
+    if (lastFeedingDate) {
+      payload.last_successful_feeding_date = lastFeedingDate;
+    }
 
-    setSavingProfile(false);
+    try {
+      const response = await fetch(
+        profile
+          ? `${API_BASE_URL}/snake-profiles/${profile.id}`
+          : `${API_BASE_URL}/snake-profiles`,
+        {
+          method: profile ? "PATCH" : "POST",
+          headers: getApiHeaders(),
+          body: JSON.stringify(payload),
+        },
+      );
 
-    if (error) {
+      const data = await parseApiResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error || "Nie udało się zapisać profilu.");
+      }
+    } catch (error) {
       console.error(error);
+      setSavingProfile(false);
       setProfileMessage("Nie udało się zapisać profilu. Spróbuj ponownie.");
       return;
     }
+
+    setSavingProfile(false);
 
     setResult(null);
     await fetchProfile();
@@ -257,7 +289,7 @@ function App() {
         }),
       });
 
-      const data = await response.json();
+      const data = await parseApiResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error || "Błąd kalkulacji");
@@ -295,7 +327,7 @@ function App() {
         }),
       });
 
-      const data = await response.json();
+      const data = await parseApiResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error || "Nie udało się zapisać karmienia");
