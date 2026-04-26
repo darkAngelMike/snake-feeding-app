@@ -26,6 +26,9 @@ app.use(adminRoutes);
 app.use(calculationRoutes);
 app.use(feedingRoutes);
 app.use(snakeProfileRoutes);
+app.use((_req, res) => {
+  res.status(404).json({ error: "Endpoint not found" });
+});
 app.use(errorHandler);
 
 app.listen(port, () => {

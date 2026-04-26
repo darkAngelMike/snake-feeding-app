@@ -5,3 +5,4 @@ server/node_modules
 database.db
 data.json.codex
 server/data.json
+.codex

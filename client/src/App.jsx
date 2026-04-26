@@ -659,7 +659,29 @@ function App() {
             </div>
 
             <div className="field">
-              <label htmlFor="lifeStage">Etap życia</label>
+              <div className="label-row">
+                <label htmlFor="lifeStage">Etap życia</label>
+                <details className="field-help">
+                  <summary aria-label="Pomoc: etap życia">?</summary>
+                  <div className="field-help-panel">
+                    <dl>
+                      <dt>Młody po wykluciu</dt>
+                      <dd>ok. 0-3 miesiące, zwykle &lt; 150 g</dd>
+                      <dt>Młody</dt>
+                      <dd>ok. 3-12 miesięcy, zwykle 150-600 g</dd>
+                      <dt>Podrostek</dt>
+                      <dd>ok. 1-3 lata, zwykle 600-1500 g</dd>
+                      <dt>Dorosły</dt>
+                      <dd>powyżej ~3 lat, zwykle &gt; 1500 g</dd>
+                    </dl>
+                    <p>
+                      Samice są zazwyczaj większe i cięższe niż samce. Tempo
+                      wzrostu może się różnić. Jeśli nie masz pewności, wybierz
+                      etap najbardziej zbliżony do wagi węża.
+                    </p>
+                  </div>
+                </details>
+              </div>
               <select
                 id="lifeStage"
                 value={lifeStage}
@@ -687,6 +709,10 @@ function App() {
                 <option value="normal">Normalny</option>
                 <option value="overweight">Nadwaga</option>
               </select>
+              <p className="field-hint">
+                Ocena kondycji to Twoja obserwacja sylwetki węża. Aplikacja
+                traktuje ją jako wskazówkę do obliczeń.
+              </p>
             </div>
           </div>
 
