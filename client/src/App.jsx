@@ -782,8 +782,6 @@ function App() {
               />
             </div>
 
-            <div className="form-grid-spacer" aria-hidden="true" />
-
             <div className="field">
               <div className="label-row">
                 <label htmlFor="lifeStage">Etap życia</label>
@@ -823,7 +821,7 @@ function App() {
               </select>
             </div>
 
-            <div className="field">
+            <div className="field field--wide">
               <label htmlFor="bodyCondition">Kondycja</label>
               <select
                 id="bodyCondition"
@@ -1132,12 +1130,6 @@ function App() {
 
           {result ? (
             <>
-              {!dashboardMessage && (
-                <div className="dashboard-snake" aria-hidden="true">
-                  <span className="snake-line" />
-                  <span className="snake-head" />
-                </div>
-              )}
               <div className="feeding-result">
                 <div>
                   <span>Najbliższa data</span>
@@ -1205,6 +1197,23 @@ function App() {
             </button>
           </div>
         </article>
+      </section>
+
+      <section className="monitor-card" aria-label="Aktywność SerpentTrack">
+        <div>
+          <p className="eyebrow">Aktywność opiekuna</p>
+          <h2>SerpentTrack monitoruje plan karmienia</h2>
+          <p>
+            {result
+              ? "Plan został przeliczony. Sprawdź sugerowaną datę i wagę karmówki przed zapisem kolejnego karmienia."
+              : "Oblicz termin karmienia, żeby zobaczyć rekomendację i uzupełnić dziennik opieki."}
+          </p>
+        </div>
+        <div className="dashboard-snake" aria-hidden="true">
+          <span className="snake-track" />
+          <span className="snake-line" />
+          <span className="snake-head" />
+        </div>
       </section>
 
       <section className="quick-actions">
