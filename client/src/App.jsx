@@ -101,7 +101,7 @@ function App() {
         throw new Error(data.error || "Nie udało się pobrać profilu.");
       }
 
-      applyProfileData(data[0] || null);
+      applyProfileData(data.data?.[0] || null);
     } catch (error) {
       console.error(error);
       setProfile(null);
@@ -154,7 +154,7 @@ function App() {
           throw new Error(data.error || "Nie udało się pobrać profilu.");
         }
 
-        applyProfileData(data[0] || null);
+        applyProfileData(data.data?.[0] || null);
       })
       .catch((error) => {
         console.error(error);

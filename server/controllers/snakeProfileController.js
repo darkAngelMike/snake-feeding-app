@@ -108,7 +108,10 @@ async function getProfiles(req, res) {
     });
   }
 
-  return res.json((data || []).map(sanitizeProfile));
+  return res.json({
+    success: true,
+    data: (data || []).map(sanitizeProfile),
+  });
 }
 
 async function getProfile(req, res) {
@@ -132,7 +135,10 @@ async function getProfile(req, res) {
     });
   }
 
-  return res.json(sanitizeProfile(data));
+  return res.json({
+    success: true,
+    data: sanitizeProfile(data),
+  });
 }
 
 async function createProfile(req, res) {
@@ -145,10 +151,13 @@ async function createProfile(req, res) {
     });
   }
 
-  const { data, error } = await snakeProfilesRepository.createProfile({
-    ...profile,
-    user_id: req.user.id,
-  }, req.supabase);
+  const { data, error } = await snakeProfilesRepository.createProfile(
+    {
+      ...profile,
+      user_id: req.user.id,
+    },
+    req.supabase,
+  );
 
   if (error) {
     logger.error("Nie udało się utworzyć profilu węża", error);
@@ -159,7 +168,10 @@ async function createProfile(req, res) {
     });
   }
 
-  return res.status(201).json(sanitizeProfile(data));
+  return res.status(201).json({
+    success: true,
+    data: sanitizeProfile(data),
+  });
 }
 
 async function updateProfile(req, res) {
@@ -207,7 +219,10 @@ async function updateProfile(req, res) {
     });
   }
 
-  return res.json(sanitizeProfile(data));
+  return res.json({
+    success: true,
+    data: sanitizeProfile(data),
+  });
 }
 
 module.exports = {
