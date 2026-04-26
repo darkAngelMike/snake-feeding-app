@@ -82,6 +82,83 @@ function sanitizeFeeding(feeding) {
   return safeFeeding;
 }
 
+function buildWeightAssessment(feedings) {
+  const weights = (feedings || [])
+    .map((feeding) => Number(feeding.snake_weight_g))
+    .filter((weight) => Number.isFinite(weight));
+
+  const latestWeight = weights[0];
+
+  if (latestWeight < 50) {
+    return {
+      status: "invalid",
+      severity: "danger",
+      changePercent: null,
+      message: "Waga jest poza realistycznym zakresem.",
+    };
+  }
+
+  if (latestWeight >= 5000) {
+    return {
+      status: "overweight_alert",
+      severity: "warning",
+      changePercent: null,
+      message:
+        "Waga jest bardzo wysoka jak na pytona królewskiego. Sprawdź kondycję i nie przekarmiaj.",
+    };
+  }
+
+  if (weights.length < 2) {
+    return {
+      status: "unknown",
+      severity: "neutral",
+      changePercent: null,
+      message: "Brak wystarczającej historii do oceny trendu masy.",
+    };
+  }
+
+  const previousWeight = weights[1];
+
+  if (!previousWeight) {
+    return {
+      status: "unknown",
+      severity: "neutral",
+      changePercent: null,
+      message: "Brak wystarczającej historii do oceny trendu masy.",
+    };
+  }
+
+  const changePercent = Number(
+    (((latestWeight - previousWeight) / previousWeight) * 100).toFixed(1),
+  );
+
+  if (changePercent < -8) {
+    return {
+      status: "weight_loss",
+      severity: "danger",
+      changePercent,
+      message:
+        "Masa węża wyraźnie spadła. Sprawdź karmienie i rozważ konsultację ze specjalistą.",
+    };
+  }
+
+  if (changePercent > 10) {
+    return {
+      status: "rapid_gain",
+      severity: "warning",
+      changePercent,
+      message: "Masa szybko rośnie. Uważaj na przekarmianie.",
+    };
+  }
+
+  return {
+    status: "stable",
+    severity: "success",
+    changePercent,
+    message: "Masa węża wygląda stabilnie.",
+  };
+}
+
 async function getHistory(_req, res) {
   const { data, error } = await feedingsRepository.getHistory();
 
@@ -143,6 +220,7 @@ async function getFeedings(req, res) {
   return res.json({
     success: true,
     data: (data || []).map(sanitizeFeeding),
+    weightAssessment: buildWeightAssessment(data || []),
   });
 }
 

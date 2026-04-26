@@ -21,6 +21,22 @@ const feedingStatusLabels = {
   skipped: "Pominięte",
 };
 
+const weightAssessmentLabels = {
+  unknown: "Brak danych",
+  weight_loss: "Spadek masy",
+  rapid_gain: "Szybki wzrost",
+  stable: "Stabilna",
+  overweight_alert: "Bardzo wysoka",
+  invalid: "Nieprawidłowa",
+};
+
+const defaultWeightAssessment = {
+  status: "unknown",
+  severity: "neutral",
+  changePercent: null,
+  message: "Brak wystarczającej historii do oceny trendu masy.",
+};
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://snake-backend-kb14.onrender.com";
 const MIN_SNAKE_WEIGHT_G = 50;
@@ -32,6 +48,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
   const currentUserIdRef = useRef(null);
+  const currentProfileIdRef = useRef(null);
+  const profileFormDirtyRef = useRef(false);
 
   const [nick, setNick] = useState("");
   const [password, setPassword] = useState("");
@@ -55,6 +73,9 @@ function App() {
   const [feedingSaved, setFeedingSaved] = useState(false);
 
   const [history, setHistory] = useState([]);
+  const [weightAssessment, setWeightAssessment] = useState(
+    defaultWeightAssessment,
+  );
   const [authMessage, setAuthMessage] = useState("");
   const [profileMessage, setProfileMessage] = useState("");
   const [feedingMessage, setFeedingMessage] = useState("");
@@ -97,7 +118,32 @@ function App() {
     return fallback;
   };
 
+  const markProfileFormDirty = () => {
+    profileFormDirtyRef.current = true;
+  };
+
+  const buildMissingProfileMessage = () => {
+    const missing = [];
+
+    if (!snakeName.trim()) missing.push("imię węża");
+    if (!currentWeightG) missing.push("wagę węża");
+    if (!lifeStage) missing.push("etap życia");
+    if (!bodyCondition) missing.push("kondycję węża");
+
+    if (missing.length === 0) return "";
+
+    const action = missing[0] === "kondycję węża" ? "Wybierz" : "Uzupełnij";
+    const fields =
+      missing.length === 1
+        ? missing[0]
+        : `${missing.slice(0, -1).join(", ")} i ${missing.at(-1)}`;
+
+    return `${action} ${fields}.`;
+  };
+
   const resetUserScopedState = () => {
+    profileFormDirtyRef.current = false;
+    currentProfileIdRef.current = null;
     setProfile(null);
     setSnakeName("");
     setCurrentWeightG("");
@@ -113,6 +159,7 @@ function App() {
     setMealWeight("");
     setFeedingSaved(false);
     setHistory([]);
+    setWeightAssessment(defaultWeightAssessment);
     setProfileMessage("");
     setFeedingMessage("");
     setDashboardMessage("");
@@ -122,8 +169,14 @@ function App() {
     setView("dashboard");
   };
 
-  const applyProfileData = (data) => {
+  const applyProfileData = (data, { preserveDirtyForm = false } = {}) => {
+    currentProfileIdRef.current = data?.id || null;
     setProfile(data);
+
+    if (preserveDirtyForm && profileFormDirtyRef.current) {
+      if (!data) setHistory([]);
+      return;
+    }
 
     if (data) {
       setSnakeName(data.name || "");
@@ -133,6 +186,7 @@ function App() {
       setBodyCondition(data.body_condition || "");
     } else {
       setHistory([]);
+      setWeightAssessment(defaultWeightAssessment);
       setSnakeName("");
       setCurrentWeightG("");
       setLifeStage("");
@@ -165,7 +219,7 @@ function App() {
 
       if (currentUserIdRef.current !== requestUserId) return;
 
-      applyProfileData(data.data?.[0] || null);
+      applyProfileData(data.data?.[0] || null, { preserveDirtyForm: true });
     } catch (error) {
       console.error(error);
       if (currentUserIdRef.current !== requestUserId) return;
@@ -181,9 +235,12 @@ function App() {
   const fetchHistory = async () => {
     if (!session || !profile?.id) return;
 
+    const requestUserId = session.user.id;
+    const requestProfileId = profile.id;
+
     try {
       const response = await fetch(
-        `${API_BASE_URL}/feedings?snake_id=${encodeURIComponent(profile.id)}`,
+        `${API_BASE_URL}/feedings?snake_id=${encodeURIComponent(requestProfileId)}`,
         {
           headers: getApiHeaders(),
         },
@@ -200,10 +257,25 @@ function App() {
         );
       }
 
+      if (
+        currentUserIdRef.current !== requestUserId ||
+        currentProfileIdRef.current !== requestProfileId
+      ) {
+        return;
+      }
+
       setHistory(data.data || []);
+      setWeightAssessment(data.weightAssessment || defaultWeightAssessment);
     } catch (error) {
       console.error(error);
+      if (
+        currentUserIdRef.current !== requestUserId ||
+        currentProfileIdRef.current !== requestProfileId
+      ) {
+        return;
+      }
       setHistory([]);
+      setWeightAssessment(defaultWeightAssessment);
       setDashboardMessage(
         error.message || "Nie udało się pobrać historii karmień.",
       );
@@ -260,7 +332,7 @@ function App() {
 
         if (currentUserIdRef.current !== requestUserId) return;
 
-        applyProfileData(data.data?.[0] || null);
+        applyProfileData(data.data?.[0] || null, { preserveDirtyForm: true });
       })
       .catch((error) => {
         console.error(error);
@@ -278,7 +350,10 @@ function App() {
   useEffect(() => {
     if (!session || !profile?.id) return;
 
-    fetch(`${API_BASE_URL}/feedings?snake_id=${encodeURIComponent(profile.id)}`, {
+    const requestUserId = session.user.id;
+    const requestProfileId = profile.id;
+
+    fetch(`${API_BASE_URL}/feedings?snake_id=${encodeURIComponent(requestProfileId)}`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,
@@ -296,11 +371,26 @@ function App() {
           );
         }
 
+        if (
+          currentUserIdRef.current !== requestUserId ||
+          currentProfileIdRef.current !== requestProfileId
+        ) {
+          return;
+        }
+
         setHistory(data.data || []);
+        setWeightAssessment(data.weightAssessment || defaultWeightAssessment);
       })
       .catch((error) => {
         console.error(error);
+        if (
+          currentUserIdRef.current !== requestUserId ||
+          currentProfileIdRef.current !== requestProfileId
+        ) {
+          return;
+        }
         setHistory([]);
+        setWeightAssessment(defaultWeightAssessment);
         setDashboardMessage(
           error.message || "Nie udało się pobrać historii karmień.",
         );
@@ -348,8 +438,10 @@ function App() {
   const saveProfile = async () => {
     setProfileMessage("");
 
-    if (!snakeName || !currentWeightG || !lifeStage || !bodyCondition) {
-      setProfileMessage("Uzupełnij imię, wagę, etap życia i kondycję węża.");
+    const missingProfileMessage = buildMissingProfileMessage();
+
+    if (missingProfileMessage) {
+      setProfileMessage(missingProfileMessage);
       return;
     }
 
@@ -413,6 +505,7 @@ function App() {
 
     setSavingProfile(false);
 
+    profileFormDirtyRef.current = false;
     setResult(null);
     await fetchProfile();
     setView("dashboard");
@@ -648,7 +741,10 @@ function App() {
               <input
                 id="snakeName"
                 value={snakeName}
-                onChange={(e) => setSnakeName(e.target.value)}
+                onChange={(e) => {
+                  markProfileFormDirty();
+                  setSnakeName(e.target.value);
+                }}
                 placeholder="Twój wąż"
               />
             </div>
@@ -661,9 +757,16 @@ function App() {
                 min={MIN_SNAKE_WEIGHT_G}
                 max={MAX_SNAKE_WEIGHT_G}
                 value={currentWeightG}
-                onChange={(e) => setCurrentWeightG(e.target.value)}
+                onChange={(e) => {
+                  markProfileFormDirty();
+                  setCurrentWeightG(e.target.value);
+                }}
                 placeholder="np. 500"
               />
+              <p className="field-hint">
+                Zakres dla formularza: 50-5000 g. Jeśli wynik jest nietypowy,
+                sprawdź wagę przed zapisem.
+              </p>
             </div>
 
             <div className="field">
@@ -672,16 +775,14 @@ function App() {
                 id="lastFeedingDate"
                 type="date"
                 value={lastFeedingDate}
-                onChange={(e) => setLastFeedingDate(e.target.value)}
+                onChange={(e) => {
+                  markProfileFormDirty();
+                  setLastFeedingDate(e.target.value);
+                }}
               />
             </div>
 
-            <div className="form-grid-note">
-              <p>
-                Zakres dla formularza: 50-5000 g. Jeśli wynik jest nietypowy,
-                sprawdź wagę przed zapisem.
-              </p>
-            </div>
+            <div className="form-grid-spacer" aria-hidden="true" />
 
             <div className="field">
               <div className="label-row">
@@ -709,7 +810,10 @@ function App() {
                 id="lifeStage"
                 value={lifeStage}
                 className={!lifeStage ? "is-placeholder" : undefined}
-                onChange={(e) => setLifeStage(e.target.value)}
+                onChange={(e) => {
+                  markProfileFormDirty();
+                  setLifeStage(e.target.value);
+                }}
               >
                 <option value="">Wybierz etap życia</option>
                 <option value="hatchling">Młody po wykluciu</option>
@@ -725,7 +829,10 @@ function App() {
                 id="bodyCondition"
                 value={bodyCondition}
                 className={!bodyCondition ? "is-placeholder" : undefined}
-                onChange={(e) => setBodyCondition(e.target.value)}
+                onChange={(e) => {
+                  markProfileFormDirty();
+                  setBodyCondition(e.target.value);
+                }}
               >
                 <option value="">Wybierz kondycję</option>
                 <option value="underweight">Niedowaga</option>
@@ -751,7 +858,11 @@ function App() {
             {isProfileComplete && (
               <button
                 className="button button--secondary"
-                onClick={() => setView("dashboard")}
+                onClick={() => {
+                  profileFormDirtyRef.current = false;
+                  applyProfileData(profile);
+                  setView("dashboard");
+                }}
               >
                 Wróć do panelu
               </button>
@@ -946,6 +1057,23 @@ function App() {
             <div className="stat">
               <span>Kondycja</span>
               <strong>{conditionLabels[bodyCondition] || bodyCondition}</strong>
+              <p>Ocena wpisana ręcznie w profilu.</p>
+            </div>
+            <div
+              className={`stat stat--assessment stat--${weightAssessment.severity}`}
+            >
+              <span>Status masy</span>
+              <strong>
+                {weightAssessmentLabels[weightAssessment.status] ||
+                  weightAssessment.status}
+              </strong>
+              {weightAssessment.changePercent !== null && (
+                <em>
+                  {weightAssessment.changePercent > 0 ? "+" : ""}
+                  {weightAssessment.changePercent}%
+                </em>
+              )}
+              <p>{weightAssessment.message}</p>
             </div>
             <div className="stat">
               <span>Ostatnie karmienie</span>
@@ -1006,7 +1134,8 @@ function App() {
             <>
               {!dashboardMessage && (
                 <div className="dashboard-snake" aria-hidden="true">
-                  <span>🐍</span>
+                  <span className="snake-line" />
+                  <span className="snake-head" />
                 </div>
               )}
               <div className="feeding-result">
