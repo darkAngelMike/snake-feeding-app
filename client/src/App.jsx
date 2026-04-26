@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import "./App.css";
 import { supabase } from "./supabaseClient";
 
@@ -22,6 +22,8 @@ function App() {
   const [session, setSession] = useState(null);
   const [view, setView] = useState("dashboard");
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const currentUserIdRef = useRef(null);
 
   const [nick, setNick] = useState("");
   const [password, setPassword] = useState("");
@@ -75,6 +77,41 @@ function App() {
     throw new Error("Backend zwrócił odpowiedź inną niż JSON.");
   };
 
+  const getApiErrorMessage = (response, fallback) => {
+    if (response.status === 401) return "Sesja wygasła. Zaloguj się ponownie.";
+    if (response.status === 403) return "Nie masz dostępu do tego profilu.";
+    if (response.status >= 500) {
+      return "Wystąpił błąd serwera. Spróbuj ponownie później.";
+    }
+
+    return fallback;
+  };
+
+  const resetUserScopedState = () => {
+    setProfile(null);
+    setSnakeName("");
+    setCurrentWeightG("");
+    setLifeStage("adult");
+    setLastFeedingDate("");
+    setBodyCondition("normal");
+    setRefusedMealsCount("0");
+    setIsShedding(false);
+    setLastMealWeightG("");
+    setResult(null);
+    setFeedingDate("");
+    setFeedingSnakeWeight("");
+    setMealWeight("");
+    setFeedingSaved(false);
+    setHistory([]);
+    setProfileMessage("");
+    setFeedingMessage("");
+    setDashboardMessage("");
+    setSavingProfile(false);
+    setSavingFeeding(false);
+    setCalculating(false);
+    setView("dashboard");
+  };
+
   const applyProfileData = (data) => {
     setProfile(data);
 
@@ -84,11 +121,21 @@ function App() {
       setLifeStage(data.life_stage || "adult");
       setLastFeedingDate(data.last_successful_feeding_date || "");
       setBodyCondition(data.body_condition || "normal");
+    } else {
+      setHistory([]);
+      setSnakeName("");
+      setCurrentWeightG("");
+      setLifeStage("adult");
+      setLastFeedingDate("");
+      setBodyCondition("normal");
     }
   };
 
   const fetchProfile = async () => {
     if (!session) return;
+
+    const requestUserId = session.user.id;
+    setProfileLoading(true);
 
     try {
       const response = await fetch(`${API_BASE_URL}/snake-profiles`, {
@@ -98,13 +145,26 @@ function App() {
       const data = await parseApiResponse(response);
 
       if (!response.ok) {
-        throw new Error(data.error || "Nie udało się pobrać profilu.");
+        throw new Error(
+          getApiErrorMessage(
+            response,
+            data.error || "Nie udało się pobrać profilu.",
+          ),
+        );
       }
+
+      if (currentUserIdRef.current !== requestUserId) return;
 
       applyProfileData(data.data?.[0] || null);
     } catch (error) {
       console.error(error);
+      if (currentUserIdRef.current !== requestUserId) return;
       setProfile(null);
+      setProfileMessage(error.message || "Nie udało się pobrać profilu.");
+    } finally {
+      if (currentUserIdRef.current === requestUserId) {
+        setProfileLoading(false);
+      }
     }
   };
 
@@ -127,12 +187,24 @@ function App() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      currentUserIdRef.current = data.session?.user?.id || null;
+      setProfileLoading(Boolean(data.session?.user?.id));
       setSession(data.session);
       setLoading(false);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => setSession(session),
+      (_event, session) => {
+        const nextUserId = session?.user?.id || null;
+
+        if (currentUserIdRef.current !== nextUserId) {
+          resetUserScopedState();
+          setProfileLoading(Boolean(nextUserId));
+        }
+
+        currentUserIdRef.current = nextUserId;
+        setSession(session);
+      },
     );
 
     return () => listener.subscription.unsubscribe();
@@ -140,6 +212,8 @@ function App() {
 
   useEffect(() => {
     if (!session) return;
+
+    const requestUserId = session.user.id;
 
     fetch(`${API_BASE_URL}/snake-profiles`, {
       headers: {
@@ -151,14 +225,28 @@ function App() {
         const data = await parseApiResponse(response);
 
         if (!response.ok) {
-          throw new Error(data.error || "Nie udało się pobrać profilu.");
+          throw new Error(
+            getApiErrorMessage(
+              response,
+              data.error || "Nie udało się pobrać profilu.",
+            ),
+          );
         }
+
+        if (currentUserIdRef.current !== requestUserId) return;
 
         applyProfileData(data.data?.[0] || null);
       })
       .catch((error) => {
         console.error(error);
+        if (currentUserIdRef.current !== requestUserId) return;
         setProfile(null);
+        setProfileMessage(error.message || "Nie udało się pobrać profilu.");
+      })
+      .finally(() => {
+        if (currentUserIdRef.current === requestUserId) {
+          setProfileLoading(false);
+        }
       });
   }, [session]);
 
@@ -211,10 +299,11 @@ function App() {
 
   const logout = async () => {
     await supabase.auth.signOut();
+    currentUserIdRef.current = null;
     setSession(null);
-    setProfile(null);
-    setResult(null);
-    setView("dashboard");
+    resetUserScopedState();
+    setAuthMessage("");
+    setPassword("");
   };
 
   const saveProfile = async () => {
@@ -253,12 +342,19 @@ function App() {
       const data = await parseApiResponse(response);
 
       if (!response.ok) {
-        throw new Error(data.error || "Nie udało się zapisać profilu.");
+        throw new Error(
+          getApiErrorMessage(
+            response,
+            data.error || "Nie udało się zapisać profilu.",
+          ),
+        );
       }
     } catch (error) {
       console.error(error);
       setSavingProfile(false);
-      setProfileMessage("Nie udało się zapisać profilu. Spróbuj ponownie.");
+      setProfileMessage(
+        error.message || "Nie udało się zapisać profilu. Spróbuj ponownie.",
+      );
       return;
     }
 
@@ -292,13 +388,17 @@ function App() {
       const data = await parseApiResponse(response);
 
       if (!response.ok) {
-        throw new Error(data.error || "Błąd kalkulacji");
+        throw new Error(
+          getApiErrorMessage(response, data.error || "Błąd kalkulacji"),
+        );
       }
 
       setResult(data.result);
     } catch (error) {
       console.error(error);
-      setDashboardMessage("Nie udało się obliczyć kolejnego karmienia.");
+      setDashboardMessage(
+        error.message || "Nie udało się obliczyć kolejnego karmienia.",
+      );
     }
 
     setCalculating(false);
@@ -330,7 +430,12 @@ function App() {
       const data = await parseApiResponse(response);
 
       if (!response.ok) {
-        throw new Error(data.error || "Nie udało się zapisać karmienia");
+        throw new Error(
+          getApiErrorMessage(
+            response,
+            data.error || "Nie udało się zapisać karmienia",
+          ),
+        );
       }
 
       if (!data.profileUpdated) {
@@ -364,7 +469,7 @@ function App() {
       <main className="app-shell app-shell--center">
         <section className="loading-card" aria-live="polite">
           <div className="loading-mark" />
-          <p>Ładowanie panelu opieki...</p>
+          <p>Sprawdzanie sesji...</p>
         </section>
       </main>
     );
@@ -373,9 +478,9 @@ function App() {
   if (!session) {
     return (
       <main className="auth-page">
-        <section className="auth-hero" aria-label="Tyson Snake App">
+        <section className="auth-hero" aria-label="Panel opiekuna węża">
           <p className="eyebrow">Panel opiekuna gada</p>
-          <h1>Tyson Snake App</h1>
+          <h1>Snake Care</h1>
           <p>
             Profesjonalny rytm karmienia, aktualna waga i historia opieki w
             jednym czytelnym miejscu.
@@ -400,7 +505,7 @@ function App() {
               id="nick"
               value={nick}
               onChange={(e) => setNick(e.target.value)}
-              placeholder="np. tyson"
+              placeholder="Twój nick"
             />
           </div>
 
@@ -416,13 +521,32 @@ function App() {
           </div>
 
           <div className="button-row">
-            <button className="button button--primary" onClick={login}>
+            <button
+              className="button button--primary"
+              disabled={!nick || !password}
+              onClick={login}
+            >
               Zaloguj
             </button>
-            <button className="button button--secondary" onClick={register}>
+            <button
+              className="button button--secondary"
+              disabled={!nick || !password}
+              onClick={register}
+            >
               Zarejestruj
             </button>
           </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (profileLoading) {
+    return (
+      <main className="app-shell app-shell--center">
+        <section className="loading-card" aria-live="polite">
+          <div className="loading-mark" />
+          <p>Ładowanie profilu węża...</p>
         </section>
       </main>
     );
@@ -443,8 +567,20 @@ function App() {
 
         <section className="form-card form-card--wide">
           <div className="section-heading">
-            <p className="eyebrow">Dane bazowe</p>
-            <h2>Uzupełnij informacje do planowania karmienia</h2>
+            <p className="eyebrow">
+              {profile ? "Dane bazowe" : "Nie masz jeszcze profilu węża"}
+            </p>
+            <h2>
+              {profile
+                ? "Uzupełnij informacje do planowania karmienia"
+                : "Dodaj pierwszy profil węża"}
+            </h2>
+            {!profile && (
+              <p className="muted">
+                Dane profilu są pobierane i zapisywane przez backend dla
+                aktualnie zalogowanego użytkownika.
+              </p>
+            )}
           </div>
 
           {profileMessage && (
@@ -460,7 +596,7 @@ function App() {
                 id="snakeName"
                 value={snakeName}
                 onChange={(e) => setSnakeName(e.target.value)}
-                placeholder="Tyson"
+                placeholder="Twój wąż"
               />
             </div>
 
@@ -516,7 +652,7 @@ function App() {
           <div className="button-row">
             <button
               className="button button--primary"
-              disabled={savingProfile}
+              disabled={savingProfile || profileLoading}
               onClick={saveProfile}
             >
               {savingProfile ? "Zapisywanie..." : "Zapisz profil"}
@@ -611,7 +747,7 @@ function App() {
           <div className="button-row">
             <button
               className="button button--primary"
-              disabled={savingFeeding}
+              disabled={savingFeeding || profileLoading}
               onClick={saveFeeding}
             >
               {savingFeeding ? "Zapisywanie..." : "Zapisz karmienie"}
@@ -825,7 +961,7 @@ function App() {
           <div className="button-row">
             <button
               className="button button--primary"
-              disabled={calculating}
+              disabled={calculating || profileLoading}
               onClick={calculateFeeding}
             >
               {calculating ? "Obliczanie..." : "Oblicz termin"}
