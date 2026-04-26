@@ -26,6 +26,58 @@ function App() {
 
   const [history, setHistory] = useState([]);
 
+  const isProfileComplete =
+    profile?.name && profile?.weight && profile?.last_feeding_date;
+
+  const getFakeEmail = () => `${nick}@snake.local`;
+
+  const applyProfileData = (data) => {
+    setProfile(data);
+
+    if (data) {
+      setSnakeName(data.name || "");
+      setWeight(data.weight || "");
+      setStage(data.stage || "adult");
+      setLastFeedingDate(data.last_feeding_date || "");
+      setBodyCondition(data.body_condition || "normal");
+    }
+  };
+
+  const fetchProfile = async () => {
+    if (!session) return;
+
+    const { data, error } = await supabase
+      .from("snake_profiles")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error(error);
+      setProfile(null);
+      return;
+    }
+
+    applyProfileData(data);
+  };
+
+  const fetchHistory = async () => {
+    if (!profile?.id) return;
+
+    const { data, error } = await supabase
+      .from("feedings")
+      .select("*")
+      .eq("snake_id", profile.id)
+      .order("feeding_date", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setHistory(data || []);
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -40,21 +92,41 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (session) {
-      fetchProfile();
-    }
+    if (!session) return;
+
+    supabase
+      .from("snake_profiles")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error(error);
+          setProfile(null);
+          return;
+        }
+
+        applyProfileData(data);
+      });
   }, [session]);
 
   useEffect(() => {
-    if (profile) {
-      fetchHistory();
-    }
-  }, [profile]);
+    if (!profile?.id) return;
 
-  const isProfileComplete =
-    profile?.name && profile?.weight && profile?.last_feeding_date;
+    supabase
+      .from("feedings")
+      .select("*")
+      .eq("snake_id", profile.id)
+      .order("feeding_date", { ascending: false })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error(error);
+          return;
+        }
 
-  const getFakeEmail = () => `${nick}@snake.local`;
+        setHistory(data || []);
+      });
+  }, [profile?.id]);
 
   const register = async () => {
     const { error } = await supabase.auth.signUp({
@@ -81,30 +153,6 @@ function App() {
     setProfile(null);
     setResult(null);
     setView("dashboard");
-  };
-
-  const fetchProfile = async () => {
-    const { data, error } = await supabase
-      .from("snake_profiles")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
-
-    if (error) {
-      console.error(error);
-      setProfile(null);
-      return;
-    }
-
-    setProfile(data);
-
-    if (data) {
-      setSnakeName(data.name || "");
-      setWeight(data.weight || "");
-      setStage(data.stage || "adult");
-      setLastFeedingDate(data.last_feeding_date || "");
-      setBodyCondition(data.body_condition || "normal");
-    }
   };
 
   const saveProfile = async () => {
@@ -199,23 +247,6 @@ function App() {
 
     await fetchProfile();
     await fetchHistory();
-  };
-
-  const fetchHistory = async () => {
-    if (!profile?.id) return;
-
-    const { data, error } = await supabase
-      .from("feedings")
-      .select("*")
-      .eq("snake_id", profile.id)
-      .order("feeding_date", { ascending: false });
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    setHistory(data || []);
   };
 
   if (loading) return <p style={{ textAlign: "center" }}>Ładowanie...</p>;

@@ -3,4 +3,5 @@ client/node_modules
 server/node_modules
 .env
 database.db
-data.json
+data.json.codex
+server/data.json
