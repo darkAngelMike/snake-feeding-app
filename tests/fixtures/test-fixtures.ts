@@ -1,7 +1,11 @@
 import { test as base, expect, request } from "@playwright/test";
 import { buildQaUser } from "../data/builders";
 import { AdminClient } from "../services/admin.client";
-import { AuthClient, type AuthSession, type TestUser } from "../services/auth.client";
+import {
+  AuthClient,
+  type AuthSession,
+  type TestUser,
+} from "../services/auth.client";
 import { CalculationsClient } from "../services/calculations.client";
 import { FeedingsClient } from "../services/feedings.client";
 import { SnakeProfilesClient } from "../services/snake-profiles.client";

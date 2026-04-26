@@ -15,7 +15,7 @@ type FeedingOverrides = Partial<{
 }>;
 
 export function buildQaUser() {
-  const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const unique = buildUniqueSuffix();
 
   return {
     nick: `qa_${unique}`,
@@ -26,7 +26,7 @@ export function buildQaUser() {
 
 export function buildSnakeProfile(overrides: ProfileOverrides = {}) {
   return {
-    name: "QA Python",
+    name: `QA Python ${buildUniqueSuffix()}`,
     current_weight_g: 1000,
     life_stage: "adult",
     body_condition: "normal",
@@ -63,4 +63,8 @@ export function dateDaysAgo(days: number) {
   const date = new Date();
   date.setUTCDate(date.getUTCDate() - days);
   return date.toISOString().slice(0, 10);
+}
+
+function buildUniqueSuffix() {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }

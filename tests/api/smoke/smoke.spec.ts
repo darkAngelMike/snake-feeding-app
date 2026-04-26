@@ -1,5 +1,9 @@
-import { test, expect } from "../fixtures/test-fixtures";
-import { buildCalculationInput, buildFeeding } from "../data/builders";
+import { test, expect } from "../../fixtures/test-fixtures";
+import {
+  buildCalculationInput,
+  buildFeeding,
+  buildSnakeProfile,
+} from "../../data/builders";
 
 test.describe("API smoke", () => {
   test("auth, profile, calculation, feeding and history flow @smoke", async ({
@@ -23,11 +27,7 @@ test.describe("API smoke", () => {
 
     await test.step("Create snake profile through backend API", async () => {
       const response = await apiClient.snakeProfiles.create({
-        name: "QA Python",
-        current_weight_g: 1000,
-        life_stage: "adult",
-        body_condition: "normal",
-        last_successful_feeding_date: new Date().toISOString().slice(0, 10),
+        ...buildSnakeProfile(),
       });
       const body = await response.json();
 

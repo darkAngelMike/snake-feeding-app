@@ -1,9 +1,9 @@
-import { test } from "../fixtures/test-fixtures";
-import { buildFeeding } from "../data/builders";
-import { DashboardPage } from "../pages/dashboard.page";
-import { FeedingFormPage } from "../pages/feeding-form.page";
-import { HistoryPage } from "../pages/history.page";
-import { authenticatePageWithSupabase } from "../services/auth.client";
+import { test } from "../../fixtures/test-fixtures";
+import { buildFeeding } from "../../data/builders";
+import { DashboardPage } from "../../pages/dashboard.page";
+import { FeedingFormPage } from "../../pages/feeding-form.page";
+import { HistoryPage } from "../../pages/history.page";
+import { authenticatePageWithSupabase } from "../../services/auth.client";
 
 test.describe("UI E2E smoke", () => {
   test("authenticated user can calculate, save feeding and see history @smoke", async ({
