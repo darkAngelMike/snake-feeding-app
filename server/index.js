@@ -1,3 +1,5 @@
+const swaggerUi = require("swagger-ui-express");
+const { swaggerSpec } = require("./config/openapi");
 const express = require("express");
 const cors = require("cors");
 const adminRoutes = require("./routes/adminRoutes");
@@ -9,6 +11,7 @@ const { errorHandler } = require("./middleware/errorHandler");
 const logger = require("./utils/logger");
 
 const app = express();
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const port = getPort();
 
 app.use(
