@@ -1,9 +1,19 @@
 const { getSupabaseServiceRoleClient } = require("../config/supabaseClient");
 const logger = require("../utils/logger");
 
+const TEST_EMAIL_PREFIXES = ["qa_", "test_"];
+const TEST_EMAIL_DOMAIN = "@snake.local";
+
 function getAdminSecret(req) {
   const header = req.headers["x-admin-secret"];
   return Array.isArray(header) ? header[0] : header;
+}
+
+function isTestCleanupEnabled() {
+  return (
+    process.env.NODE_ENV === "test" ||
+    process.env.ALLOW_TEST_CLEANUP === "true"
+  );
 }
 
 function assertAdminSecret(req, res) {
@@ -20,17 +30,64 @@ function assertAdminSecret(req, res) {
   return true;
 }
 
-async function deleteTableRows(client, tableName) {
+function assertTestCleanupEnabled(req, res) {
+  if (isTestCleanupEnabled()) {
+    return true;
+  }
+
+  logger.error("Odrzucono cleanup poza jawnie testowym środowiskiem");
+  res.status(403).json({
+    error: "Cleanup jest dostępny tylko w środowisku testowym",
+  });
+  return false;
+}
+
+function getCleanupEmailPrefix(req) {
+  return String(req.body?.userEmailPrefix || "").trim().toLowerCase();
+}
+
+function isAllowedTestEmailPrefix(prefix) {
+  return (
+    prefix.length >= 6 &&
+    TEST_EMAIL_PREFIXES.some((allowedPrefix) => prefix.startsWith(allowedPrefix))
+  );
+}
+
+function assertTestEmailPrefix(req, res) {
+  const prefix = getCleanupEmailPrefix(req);
+
+  if (isAllowedTestEmailPrefix(prefix)) {
+    return prefix;
+  }
+
+  res.status(400).json({
+    error: "Wymagany jest bezpieczny prefix użytkowników testowych",
+  });
+  return null;
+}
+
+function isMatchingTestUser(user, emailPrefix) {
+  const email = String(user.email || "").toLowerCase();
+  return email.startsWith(emailPrefix) && email.endsWith(TEST_EMAIL_DOMAIN);
+}
+
+async function deleteRowsByUserIds(client, tableName, userIds) {
+  if (userIds.length === 0) return 0;
+
   const { count, error } = await client
     .from(tableName)
     .delete({ count: "exact" })
-    .not("id", "is", null);
+    .in("user_id", userIds);
 
   if (error) {
     throw error;
   }
 
   return count ?? "unknown";
+}
+
+function filterTestUsers(users, emailPrefix) {
+  return users.filter((user) => isMatchingTestUser(user, emailPrefix));
 }
 
 async function listAllUsers(client) {
@@ -59,9 +116,12 @@ async function listAllUsers(client) {
   }
 }
 
-async function deleteAuthUsers(client) {
+async function listTestUsers(client, emailPrefix) {
   const users = await listAllUsers(client);
+  return filterTestUsers(users, emailPrefix);
+}
 
+async function deleteAuthUsers(client, users) {
   for (const user of users) {
     const { error } = await client.auth.admin.deleteUser(user.id);
 
@@ -75,6 +135,10 @@ async function deleteAuthUsers(client) {
 
 async function cleanup(req, res) {
   if (!assertAdminSecret(req, res)) return;
+  if (!assertTestCleanupEnabled(req, res)) return;
+
+  const emailPrefix = assertTestEmailPrefix(req, res);
+  if (!emailPrefix) return;
 
   let client;
 
@@ -88,14 +152,21 @@ async function cleanup(req, res) {
   }
 
   try {
+    const testUsers = await listTestUsers(client, emailPrefix);
+    const userIds = testUsers.map((user) => user.id);
     const deleted = {
-      feeding_calculations: await deleteTableRows(
+      feeding_calculations: await deleteRowsByUserIds(
         client,
         "feeding_calculations",
+        userIds,
       ),
-      feedings: await deleteTableRows(client, "feedings"),
-      snake_profiles: await deleteTableRows(client, "snake_profiles"),
-      users: await deleteAuthUsers(client),
+      feedings: await deleteRowsByUserIds(client, "feedings", userIds),
+      snake_profiles: await deleteRowsByUserIds(
+        client,
+        "snake_profiles",
+        userIds,
+      ),
+      users: await deleteAuthUsers(client, testUsers),
     };
 
     return res.json({

@@ -1,5 +1,5 @@
 import { test as base, expect, request } from "@playwright/test";
-import { buildQaUser } from "../data/builders";
+import { buildQaEmailPrefix, buildQaUser } from "../data/builders";
 import { AdminClient } from "../services/admin.client";
 import {
   AuthClient,
@@ -27,13 +27,17 @@ type ApiClients = {
   cleanup: void;
   feedingsClient: FeedingsClient;
   snakeProfilesClient: SnakeProfilesClient;
+  testRunId: string;
+  testUserEmailPrefix: string;
   testProfile: SnakeProfileResponse;
 };
 
+const apiBaseURL = process.env.API_BASE_URL || "http://localhost:3000";
+
 export const test = base.extend<ApiClients>({
-  adminClient: async ({ playwright }, use) => {
+  adminClient: async ({}, use) => {
     const context = await request.newContext({
-      baseURL: process.env.API_BASE_URL || "http://localhost:3000",
+      baseURL: apiBaseURL,
     });
     await use(new AdminClient(context));
     await context.dispose();
@@ -44,23 +48,35 @@ export const test = base.extend<ApiClients>({
   },
 
   cleanup: [
-    async ({ adminClient }, use) => {
-      if (process.env.ADMIN_CLEANUP_SECRET) {
-        await adminClient.cleanup();
-      }
+    async ({ adminClient, testUserEmailPrefix }, use) => {
+      const cleanupEnabled =
+        process.env.NODE_ENV === "test" ||
+        process.env.ALLOW_TEST_CLEANUP === "true";
 
       await use();
 
-      if (process.env.ADMIN_CLEANUP_SECRET) {
-        await adminClient.cleanup();
+      if (process.env.ADMIN_CLEANUP_SECRET && cleanupEnabled) {
+        const response = await adminClient.cleanup(testUserEmailPrefix);
+        expect(response.status()).toBe(200);
       }
     },
     { auto: false },
   ],
 
-  authUser: async ({ authClient, cleanup }, use) => {
+  testRunId: async ({}, use, testInfo) => {
+    const safeTitle = testInfo.titlePath.join("_");
+    await use(
+      `p${testInfo.project.name}_w${testInfo.workerIndex}_${safeTitle}`,
+    );
+  },
+
+  testUserEmailPrefix: async ({ testRunId }, use) => {
+    await use(buildQaEmailPrefix(testRunId));
+  },
+
+  authUser: async ({ authClient, cleanup, testRunId }, use) => {
     void cleanup;
-    const user = buildQaUser();
+    const user = buildQaUser(testRunId);
     const session = await authClient.createUserAndLogin(user);
 
     await use({
@@ -69,16 +85,28 @@ export const test = base.extend<ApiClients>({
     });
   },
 
-  calculationsClient: async ({ request }, use) => {
-    await use(new CalculationsClient(request));
+  calculationsClient: async ({}, use) => {
+    const context = await request.newContext({
+      baseURL: apiBaseURL,
+    });
+    await use(new CalculationsClient(context));
+    await context.dispose();
   },
 
-  feedingsClient: async ({ request }, use) => {
-    await use(new FeedingsClient(request));
+  feedingsClient: async ({}, use) => {
+    const context = await request.newContext({
+      baseURL: apiBaseURL,
+    });
+    await use(new FeedingsClient(context));
+    await context.dispose();
   },
 
-  snakeProfilesClient: async ({ request }, use) => {
-    await use(new SnakeProfilesClient(request));
+  snakeProfilesClient: async ({}, use) => {
+    const context = await request.newContext({
+      baseURL: apiBaseURL,
+    });
+    await use(new SnakeProfilesClient(context));
+    await context.dispose();
   },
 
   apiClient: async (

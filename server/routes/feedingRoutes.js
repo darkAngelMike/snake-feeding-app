@@ -6,6 +6,5 @@ const router = express.Router();
 
 router.get("/feedings", requireAuth, feedingController.getFeedings);
 router.post("/feedings", requireAuth, feedingController.createFeeding);
-router.get("/history", feedingController.getHistory);
 
 module.exports = router;

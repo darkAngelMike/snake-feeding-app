@@ -1,16 +1,5 @@
 const { getSupabaseClient } = require("../config/supabaseClient");
 
-async function getHistory(client = getSupabaseClient()) {
-  try {
-    return await client
-      .from("feedings")
-      .select("*")
-      .order("id", { ascending: false });
-  } catch (error) {
-    return { data: null, error };
-  }
-}
-
 async function getBySnakeId(snakeId, client = getSupabaseClient()) {
   try {
     return await client
@@ -37,6 +26,5 @@ async function insertFeeding(payload, client = getSupabaseClient()) {
 
 module.exports = {
   getBySnakeId,
-  getHistory,
   insertFeeding,
 };

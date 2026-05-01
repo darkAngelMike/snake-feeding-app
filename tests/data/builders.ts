@@ -14,14 +14,21 @@ type FeedingOverrides = Partial<{
   status: "success" | "refused" | "skipped";
 }>;
 
-export function buildQaUser() {
+export const QA_USER_PREFIX = "qa";
+
+export function buildQaUser(runId = process.env.TEST_RUN_ID || "local") {
   const unique = buildUniqueSuffix();
+  const emailPrefix = buildQaEmailPrefix(runId);
 
   return {
-    nick: `qa_${unique}`,
-    email: `qa_${unique}@snake.local`,
+    nick: `${emailPrefix}_${unique}`,
+    email: `${emailPrefix}_${unique}@snake.local`,
     password: `Qa-${unique}-Password!`,
   };
+}
+
+export function buildQaEmailPrefix(runId = process.env.TEST_RUN_ID || "local") {
+  return `${QA_USER_PREFIX}_${sanitizeRunId(runId)}`;
 }
 
 export function buildSnakeProfile(overrides: ProfileOverrides = {}) {
@@ -67,4 +74,11 @@ export function dateDaysAgo(days: number) {
 
 function buildUniqueSuffix() {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function sanitizeRunId(runId: string) {
+  return runId
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "_")
+    .slice(0, 48);
 }

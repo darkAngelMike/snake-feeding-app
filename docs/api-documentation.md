@@ -1,6 +1,6 @@
 # API Documentation
 
-Base URL is environment-dependent. Frontend uses `VITE_API_BASE_URL` or falls back to the deployed Render URL configured in `client/src/App.jsx`.
+Base URL is environment-dependent. Frontend uses `VITE_API_BASE_URL` or falls back to `http://localhost:3000` for local development.
 
 All JSON endpoints should return JSON, including 404 and 500 responses.
 
@@ -232,13 +232,6 @@ Notes:
 - `profileUpdated: false` means feeding was saved but profile update failed.
 - If status is `success`, backend also updates `last_successful_feeding_date`.
 
-### GET /history
-
-- Auth: no.
-- Purpose: legacy/raw history endpoint.
-- Response: raw list from `feedings`.
-- Notes: not user-scoped and should not be used by frontend E2E except as a known legacy risk.
-
 ### GET /snake-profiles
 
 - Auth: yes.
@@ -357,12 +350,22 @@ HTTP statuses:
 
 - Auth: admin secret header, not Supabase user auth.
 - Purpose: destructive cleanup for test data.
+- Safety: requires `ADMIN_CLEANUP_SECRET` and either `NODE_ENV=test` or `ALLOW_TEST_CLEANUP=true`.
+- Scope: deletes only test users matching the provided `userEmailPrefix` and application rows owned by those users.
 
 Headers:
 
 ```http
 x-admin-secret: <ADMIN_CLEANUP_SECRET>
 Content-Type: application/json
+```
+
+Request body:
+
+```json
+{
+  "userEmailPrefix": "qa_example_run"
+}
 ```
 
 Success response:
@@ -384,7 +387,8 @@ If Supabase does not return count, table values may be `"unknown"`.
 HTTP statuses:
 
 - `200`: cleanup done.
-- `403`: missing/wrong `x-admin-secret`.
+- `400`: missing/unsafe `userEmailPrefix`.
+- `403`: missing/wrong `x-admin-secret` or cleanup not allowed in current environment.
 - `500`: missing service role key or cleanup failure.
 
 Security notes:
@@ -405,7 +409,6 @@ Status: `404`.
 
 ## Open Questions
 
-- Should `GET /history` be removed or protected?
 - Should API expose explicit delete endpoints for profiles/feedings in future CRUD?
 - Should `POST /feedings` support statuses other than `success` from frontend?
 - Should API responses standardize on `{ success, data }` for every endpoint including `/calculate`?

@@ -12,10 +12,10 @@
 
 Recommended pattern:
 
-- Generate unique username per test run: `qa_<timestamp>_<random>@snake.local`.
+- Generate unique username per test or worker with a QA prefix: `qa_<run_id>_<timestamp>_<random>@snake.local`.
 - Register through Supabase Auth from API or UI depending on test type.
 - Store access token only in test process memory.
-- Delete users through `POST /admin/cleanup` only in test environments.
+- Delete users through `POST /admin/cleanup` only in test environments and only by a safe QA/test email prefix.
 
 Minimum user sets:
 
@@ -81,19 +81,31 @@ Preferred cleanup:
 ```http
 POST /admin/cleanup
 x-admin-secret: <ADMIN_CLEANUP_SECRET>
+Content-Type: application/json
+
+{
+  "userEmailPrefix": "qa_<run_id>"
+}
 ```
 
-Cleanup deletes:
+Cleanup requires:
+
+- `ADMIN_CLEANUP_SECRET`
+- `NODE_ENV=test` or `ALLOW_TEST_CLEANUP=true`
+- `SUPABASE_SERVICE_ROLE_KEY` on the backend only
+- a safe `userEmailPrefix` beginning with `qa_` or `test_`
+
+Cleanup deletes only rows owned by matching test users:
 
 1. `feeding_calculations`
 2. `feedings`
 3. `snake_profiles`
-4. Supabase Auth users
+4. matching Supabase Auth users
 
 Use cleanup:
 
-- Before a full test run in a dedicated test environment.
-- After a full test run when safe.
+- After an individual test or run when the prefix is unique to that scope.
+- Before a full test run only when the prefix is unique to that run and the environment is dedicated to tests.
 - Never against production.
 
 ## Isolation Strategy
@@ -102,7 +114,8 @@ Use cleanup:
 - Do not share one user across parallel tests unless the tests are read-only.
 - For ownership tests, create User A data and assert User B receives 403.
 - Keep API setup separate from UI assertions where possible.
-- Use cleanup at suite boundaries, not inside every test, unless test data volume becomes an issue.
+- Do not run global cleanup while tests are executing in parallel.
+- If cleanup runs during a parallel suite, scope it to a per-test or per-worker prefix.
 
 ## Creating Data Through API
 
@@ -125,10 +138,10 @@ For UI tests:
 - Do not rely on database row IDs being stable across runs.
 - Do not use shared static user accounts for parallel tests.
 - Do not clean production data.
+- Do not call cleanup without a QA/test prefix.
 - Do not bypass backend ownership checks in test setup unless explicitly testing database-only behavior.
 
 ## Open Questions
 
 - What Supabase project/environment is dedicated to automated tests?
-- Should cleanup remove all users or only users with a QA prefix?
 - Are tests allowed to call Supabase Auth APIs directly, or must user creation go through UI only?

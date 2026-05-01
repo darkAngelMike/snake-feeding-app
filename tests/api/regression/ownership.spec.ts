@@ -9,11 +9,12 @@ test.describe("API ownership and RLS regression", () => {
     cleanup,
     feedingsClient,
     snakeProfilesClient,
+    testRunId,
   }) => {
     void cleanup;
     const userAProfile = await createSnakeProfile(apiClient.snakeProfiles);
 
-    const userB = buildQaUser();
+    const userB = buildQaUser(testRunId);
     const userBSession = await authClient.createUserAndLogin(userB);
     const userBProfiles = snakeProfilesClient.withToken(
       userBSession.access_token,

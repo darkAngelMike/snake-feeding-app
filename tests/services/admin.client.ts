@@ -6,9 +6,16 @@ export class AdminClient extends BaseApiClient {
     super(request);
   }
 
-  cleanup(adminSecret = process.env.ADMIN_CLEANUP_SECRET || "") {
-    return this.post("/admin/cleanup", undefined, {
-      "x-admin-secret": adminSecret,
-    });
+  cleanup(
+    userEmailPrefix: string,
+    adminSecret = process.env.ADMIN_CLEANUP_SECRET || "",
+  ) {
+    return this.post(
+      "/admin/cleanup",
+      { userEmailPrefix },
+      {
+        "x-admin-secret": adminSecret,
+      },
+    );
   }
 }

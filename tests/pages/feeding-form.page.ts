@@ -4,7 +4,9 @@ export class FeedingFormPage {
   constructor(private readonly page: Page) {}
 
   async open() {
-    await this.page.getByRole("button", { name: "Dodaj wpis" }).click();
+    await this.page
+      .getByRole("button", { name: "Dodaj wpis", exact: true })
+      .click();
   }
 
   async saveFeeding(data: {

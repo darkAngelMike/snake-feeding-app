@@ -159,19 +159,6 @@ function buildWeightAssessment(feedings) {
   };
 }
 
-async function getHistory(_req, res) {
-  const { data, error } = await feedingsRepository.getHistory();
-
-  if (error) {
-    logger.error("Nie udało się pobrać historii karmień", error);
-    return res.status(500).json({
-      error: "Błąd pobierania historii",
-    });
-  }
-
-  return res.json(data || []);
-}
-
 async function getFeedings(req, res) {
   const { snake_id: snakeId } = req.query;
   const userId = req.user.id;
@@ -325,5 +312,4 @@ async function createFeeding(req, res) {
 module.exports = {
   createFeeding,
   getFeedings,
-  getHistory,
 };

@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const isCI = Boolean(process.env.CI);
 const baseURL = process.env.BASE_URL || "http://localhost:5173";
 const apiBaseURL = process.env.API_BASE_URL || "http://localhost:3000";
 
@@ -10,13 +11,27 @@ export default defineConfig({
     timeout: 5_000,
   },
   fullyParallel: true,
-  forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  forbidOnly: isCI,
+  retries: isCI ? 2 : 0,
+  workers: isCI ? 2 : undefined,
   reporter: [
     ["list"],
     ["html", { open: "never", outputFolder: "playwright-report" }],
     ["allure-playwright", { outputFolder: "allure-results" }],
+  ],
+  webServer: [
+    {
+      command: "npm run start:backend",
+      url: apiBaseURL,
+      reuseExistingServer: !isCI,
+      timeout: 120_000,
+    },
+    {
+      command: "npm run start:frontend",
+      url: baseURL,
+      reuseExistingServer: !isCI,
+      timeout: 120_000,
+    },
   ],
   use: {
     baseURL,

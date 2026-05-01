@@ -37,8 +37,7 @@ const defaultWeightAssessment = {
   message: "Brak wystarczającej historii do oceny trendu masy.",
 };
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://snake-backend-kb14.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 const MIN_SNAKE_WEIGHT_G = 50;
 const MAX_SNAKE_WEIGHT_G = 5000;
 
