@@ -11,8 +11,10 @@ test.describe("UI profile validation regression", () => {
     void cleanup;
     const profile = buildSnakeProfile();
 
-    await authenticatePageWithSupabase(page, authUser.session);
-    await page.goto("/");
+    await test.step("Authenticate browser context and open profile form", async () => {
+      await authenticatePageWithSupabase(page, authUser.session);
+      await page.goto("/");
+    });
 
     await test.step("Submitting an empty form lists all missing profile fields", async () => {
       await page.getByTestId("profile-button-save").click();

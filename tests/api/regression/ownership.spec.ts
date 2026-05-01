@@ -12,27 +12,39 @@ test.describe("API ownership and RLS regression", () => {
     testRunId,
   }) => {
     void cleanup;
-    const userAProfile = await createSnakeProfile(apiClient.snakeProfiles);
+    let userAProfileId = "";
 
-    const userB = buildQaUser(testRunId);
-    const userBSession = await authClient.createUserAndLogin(userB);
-    const userBProfiles = snakeProfilesClient.withToken(
-      userBSession.access_token,
-    );
-    const userBFeedings = feedingsClient.withToken(userBSession.access_token);
+    await test.step("Create profile owned by user A", async () => {
+      const userAProfile = await createSnakeProfile(apiClient.snakeProfiles);
+      userAProfileId = userAProfile.id;
+    });
 
-    const profileResponse = await userBProfiles.getById(userAProfile.id);
-    const profileBody = await profileResponse.json();
+    const userB = await test.step("Create and authenticate user B", async () => {
+      const user = buildQaUser(testRunId);
+      const session = await authClient.createUserAndLogin(user);
 
-    expect(profileResponse.status()).toBe(403);
-    expect(profileBody.error).toEqual(expect.any(String));
+      return {
+        profiles: snakeProfilesClient.withToken(session.access_token),
+        feedings: feedingsClient.withToken(session.access_token),
+      };
+    });
 
-    const feedingResponse = await userBFeedings.create(
-      buildFeeding({ snake_id: userAProfile.id }),
-    );
-    const feedingBody = await feedingResponse.json();
+    await test.step("Verify user B cannot read user A profile", async () => {
+      const profileResponse = await userB.profiles.getById(userAProfileId);
+      const profileBody = await profileResponse.json();
 
-    expect(feedingResponse.status()).toBe(403);
-    expect(feedingBody.error).toEqual(expect.any(String));
+      expect(profileResponse.status()).toBe(403);
+      expect(profileBody.error).toEqual(expect.any(String));
+    });
+
+    await test.step("Verify user B cannot create feeding for user A snake", async () => {
+      const feedingResponse = await userB.feedings.create(
+        buildFeeding({ snake_id: userAProfileId }),
+      );
+      const feedingBody = await feedingResponse.json();
+
+      expect(feedingResponse.status()).toBe(403);
+      expect(feedingBody.error).toEqual(expect.any(String));
+    });
   });
 });
