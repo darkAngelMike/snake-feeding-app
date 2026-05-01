@@ -2,7 +2,7 @@ name: Publish Allure Report
 
 on:
   workflow_run:
-    workflows: ["Regression Tests"]
+    workflows: ["CI"]
     types:
       - completed
 
