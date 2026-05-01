@@ -30,5 +30,6 @@ jobs:
         run: npx playwright test --grep @smoke
         env:
           TEST_ENV: staging
-          STAGING_FRONTEND_BASE_URL: https://example.com
-          STAGING_API_BASE_URL: https://example.com
+          STAGING_FRONTEND_BASE_URL: ${{ secrets.STAGING_FRONTEND_BASE_URL }}
+          STAGING_API_BASE_URL: ${{ secrets.STAGING_API_BASE_URL }}
+          
