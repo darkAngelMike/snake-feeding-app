@@ -32,4 +32,6 @@ jobs:
           TEST_ENV: staging
           STAGING_FRONTEND_BASE_URL: ${{ secrets.STAGING_FRONTEND_BASE_URL }}
           STAGING_API_BASE_URL: ${{ secrets.STAGING_API_BASE_URL }}
-          
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          ADMIN_CLEANUP_SECRET: ${{ secrets.ADMIN_CLEANUP_SECRET }}
