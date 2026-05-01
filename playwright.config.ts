@@ -1,8 +1,15 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const isCI = Boolean(process.env.CI);
-const baseURL = process.env.BASE_URL || "http://localhost:5173";
-const apiBaseURL = process.env.API_BASE_URL || "http://localhost:3000";
+const isStaging = process.env.TEST_ENV === "staging";
+
+const baseURL = isStaging
+  ? process.env.STAGING_FRONTEND_BASE_URL || "http://localhost:5173"
+  : process.env.BASE_URL || "http://localhost:5173";
+
+const apiBaseURL = isStaging
+  ? process.env.STAGING_API_BASE_URL || "http://localhost:3000"
+  : process.env.API_BASE_URL || "http://localhost:3000";
 
 export default defineConfig({
   testDir: "./tests",
@@ -19,20 +26,22 @@ export default defineConfig({
     ["html", { open: "never", outputFolder: "playwright-report" }],
     ["allure-playwright", { outputFolder: "allure-results" }],
   ],
-  webServer: [
-    {
-      command: "npm run start:backend",
-      url: apiBaseURL,
-      reuseExistingServer: !isCI,
-      timeout: 120_000,
-    },
-    {
-      command: "npm run start:frontend",
-      url: baseURL,
-      reuseExistingServer: !isCI,
-      timeout: 120_000,
-    },
-  ],
+  webServer: isStaging
+    ? undefined
+    : [
+        {
+          command: "npm run start:backend",
+          url: apiBaseURL,
+          reuseExistingServer: !isCI,
+          timeout: 120_000,
+        },
+        {
+          command: "npm run start:frontend",
+          url: baseURL,
+          reuseExistingServer: !isCI,
+          timeout: 120_000,
+        },
+      ],
   use: {
     baseURL,
     trace: "retain-on-failure",
