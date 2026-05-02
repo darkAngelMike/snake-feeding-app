@@ -1,17 +1,26 @@
+# Local tooling
 .codex
+
+# Dependencies
 node_modules/
 client/node_modules/
 server/node_modules/
+
+# Local environment and data
 .env
 database.db
 server/database.db
 data.json.codex
 server/data.json
 AGENTS.md
+
+# Test and report artifacts
 allure-results/
 allure-report/
 playwright-report/
 test-results/
+
+# Accidental local downloads/installers
 burpsuite.sh
 download?product=community
 wget-log
