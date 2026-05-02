@@ -55,6 +55,20 @@ Existing Playwright API tests cover:
 - Cross-user ownership/RLS checks in `tests/api/regression/ownership.spec.ts`.
 - Smoke coverage for protected endpoint `401` behavior in `tests/api/smoke/smoke.spec.ts`.
 
+## Automated Security Tests
+
+Security checks from manual Burp Suite testing are mapped to deterministic Playwright API tests tagged with `@security`.
+
+| Manual test | Automated test |
+| --- | --- |
+| Missing `Authorization` header returns `401` | `tests/api/regression/auth-validation.spec.ts` - `protected resources reject missing token with 401 @regression @security` |
+| Invalid JWT token returns `401` | `tests/api/security/security.spec.ts` - `rejects invalid JWT token with 401 JSON @security` |
+| IDOR on another user's `snake_id` returns `403` | `tests/api/regression/ownership.spec.ts` - `user B cannot read user A profile or create feeding for user A snake @regression @security` |
+| Header spoofing with `X-User-Id` and `X-Role` is ignored | `tests/api/regression/ownership.spec.ts` - step `Verify spoofed user and role headers are ignored` |
+| Invalid input payloads return `400` | `tests/api/regression/auth-validation.spec.ts` - profile and calculation validation tests tagged `@security` |
+| Future feeding calculation date is blocked by business validation | `tests/api/security/security.spec.ts` - `blocks future feeding calculation date with business validation @security` |
+| Rate-limit behavior is observed safely without requiring throttling | `tests/api/security/security.spec.ts` - `observes repeated authenticated requests without requiring rate limiting @security` |
+
 ## Current ZAP Findings
 
 No ZAP report artifact is committed to the repository. Current findings should be reviewed from the latest GitHub Actions run of `OWASP ZAP Baseline Scan`.

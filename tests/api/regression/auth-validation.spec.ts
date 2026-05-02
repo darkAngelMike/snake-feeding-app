@@ -10,7 +10,7 @@ import {
 } from "../../services/test-data.service";
 
 test.describe("API auth and validation regression", () => {
-  test("protected resources reject missing token with 401 @regression", async ({
+  test("protected resources reject missing token with 401 @regression @security", async ({
     calculationsClient,
     feedingsClient,
     snakeProfilesClient,
@@ -35,7 +35,7 @@ test.describe("API auth and validation regression", () => {
     });
   });
 
-  test("profile validation returns 400 for missing fields and invalid weight @regression", async ({
+  test("profile validation returns 400 for missing fields and invalid weight @regression @security", async ({
     apiClient,
     cleanup,
   }) => {
@@ -60,7 +60,7 @@ test.describe("API auth and validation regression", () => {
     });
   });
 
-  test("calculate returns 200 for valid data and 400 for missing data @regression", async ({
+  test("calculate returns 200 for valid data and 400 for missing data @regression @security", async ({
     apiClient,
     cleanup,
   }) => {

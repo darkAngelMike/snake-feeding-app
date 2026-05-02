@@ -10,7 +10,7 @@ export class CalculationsClient extends BaseApiClient {
     return new CalculationsClient(this.request, token);
   }
 
-  calculate(body: JsonBody) {
-    return this.post("/calculate", body);
+  calculate(body: JsonBody, extraHeaders?: Record<string, string>) {
+    return this.post("/calculate", body, extraHeaders);
   }
 }

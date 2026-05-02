@@ -14,8 +14,8 @@ export class BaseApiClient {
   protected headers(extraHeaders: Record<string, string> = {}) {
     return {
       "Content-Type": "application/json",
-      ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
       ...extraHeaders,
+      ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
     };
   }
 

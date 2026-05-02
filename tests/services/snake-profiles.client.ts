@@ -10,16 +10,16 @@ export class SnakeProfilesClient extends BaseApiClient {
     return new SnakeProfilesClient(this.request, token);
   }
 
-  list() {
-    return this.get("/snake-profiles");
+  list(extraHeaders?: Record<string, string>) {
+    return this.get("/snake-profiles", extraHeaders);
   }
 
-  getById(id: string) {
-    return this.get(`/snake-profiles/${id}`);
+  getById(id: string, extraHeaders?: Record<string, string>) {
+    return this.get(`/snake-profiles/${id}`, extraHeaders);
   }
 
-  create(body: JsonBody) {
-    return this.post("/snake-profiles", body);
+  create(body: JsonBody, extraHeaders?: Record<string, string>) {
+    return this.post("/snake-profiles", body, extraHeaders);
   }
 
   update(id: string, body: JsonBody) {

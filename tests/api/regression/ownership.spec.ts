@@ -3,8 +3,9 @@ import { buildFeeding, buildQaUser } from "../../data/builders";
 import { createSnakeProfile } from "../../services/test-data.service";
 
 test.describe("API ownership and RLS regression", () => {
-  test("user B cannot read user A profile or create feeding for user A snake @regression", async ({
+  test("user B cannot read user A profile or create feeding for user A snake @regression @security", async ({
     apiClient,
+    authUser,
     authClient,
     cleanup,
     feedingsClient,
@@ -45,6 +46,20 @@ test.describe("API ownership and RLS regression", () => {
 
       expect(feedingResponse.status()).toBe(403);
       expect(feedingBody.error).toEqual(expect.any(String));
+    });
+
+    await test.step("Verify spoofed user and role headers are ignored", async () => {
+      const spoofedProfileResponse = await userB.profiles.getById(
+        userAProfileId,
+        {
+          "X-User-Id": authUser.session.user.id,
+          "X-Role": "admin",
+        },
+      );
+      const spoofedProfileBody = await spoofedProfileResponse.json();
+
+      expect(spoofedProfileResponse.status()).toBe(403);
+      expect(spoofedProfileBody.error).toEqual(expect.any(String));
     });
   });
 });

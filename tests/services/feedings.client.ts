@@ -10,11 +10,14 @@ export class FeedingsClient extends BaseApiClient {
     return new FeedingsClient(this.request, token);
   }
 
-  listBySnakeId(snakeId: string) {
-    return this.get(`/feedings?snake_id=${encodeURIComponent(snakeId)}`);
+  listBySnakeId(snakeId: string, extraHeaders?: Record<string, string>) {
+    return this.get(
+      `/feedings?snake_id=${encodeURIComponent(snakeId)}`,
+      extraHeaders,
+    );
   }
 
-  create(body: JsonBody) {
-    return this.post("/feedings", body);
+  create(body: JsonBody, extraHeaders?: Record<string, string>) {
+    return this.post("/feedings", body, extraHeaders);
   }
 }
