@@ -3,10 +3,12 @@ const { swaggerSpec } = require("./config/openapi");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+
 const adminRoutes = require("./routes/adminRoutes");
 const calculationRoutes = require("./routes/calculationRoutes");
 const feedingRoutes = require("./routes/feedingRoutes");
 const snakeProfileRoutes = require("./routes/snakeProfileRoutes");
+
 const { getPort } = require("./config/server");
 const { errorHandler } = require("./middleware/errorHandler");
 const logger = require("./utils/logger");
@@ -30,9 +32,20 @@ app.use(
   }),
 );
 
+const allowedOrigins = [
+  "https://snake-feeding-app.vercel.app",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
+
 app.use(
   cors({
-    origin: "https://snake-feeding-app.vercel.app",
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
   }),
 );
 
