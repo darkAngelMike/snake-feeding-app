@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: "0 6 * * 1"
 
+permissions:
+  contents: read
+  issues: read
+
 jobs:
   zap-baseline:
     runs-on: ubuntu-latest
@@ -16,4 +20,5 @@ jobs:
           target: "https://snake-feeding-app.vercel.app"
           cmd_options: "-a"
           fail_action: false
+          allow_issue_writing: false
           artifact_name: zap-baseline-report
