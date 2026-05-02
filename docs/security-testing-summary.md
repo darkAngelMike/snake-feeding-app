@@ -81,6 +81,12 @@ The workflow currently:
 - Does not write GitHub issues (`allow_issue_writing: false`).
 - Uploads the artifact as `zap-baseline-report`.
 
+## CSRF Posture
+
+The backend API uses `Authorization: Bearer <supabase_access_token>` for protected requests. It does not rely on cookie-based session authentication in the current implementation, so classic CSRF has low applicability.
+
+If cookie-based sessions or browser-sent authentication cookies are introduced later, CSRF risk should be reassessed and a dedicated mitigation strategy should be documented and tested.
+
 ## What Was Hardened
 
 - Backend uses Helmet for security headers.

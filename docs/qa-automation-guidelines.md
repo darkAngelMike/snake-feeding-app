@@ -6,17 +6,22 @@
 - Language: TypeScript.
 - UI tests: browser automation with Page Object Model.
 - API tests: Playwright `request` with typed API clients/services.
-- Reporting: Allure when introduced.
-- CI: run smoke first, regression separately.
+- Reporting: Playwright HTML report and Allure via `allure-playwright`.
+- CI: GitHub Actions runs smoke, regression and security-tagged API tests.
 
-No automation framework is implemented yet in this repository.
+The automation framework is implemented in this repository. Current coverage includes Playwright UI tests, Playwright API tests, smoke/regression/security tags, shared fixtures, API clients, Page Object Model classes and test data builders.
 
-## Suggested Folder Structure
+## Current Folder Structure
 
 ```text
 tests/
-  e2e/
   api/
+    smoke/
+    regression/
+    security/
+  e2e/
+    smoke/
+    regression/
   fixtures/
   pages/
   services/
@@ -24,6 +29,15 @@ tests/
   utils/
 playwright.config.ts
 ```
+
+## Test Suites And Tags
+
+- `@smoke`: critical API/UI flows for pull requests and post-deploy checks.
+- `@regression`: broader API/UI coverage for pushes to `main`.
+- `@security`: API security checks for auth, ownership, validation, header spoofing and rate-limit observation.
+- API project: `playwright test --project=api`.
+- Desktop UI project: `playwright test --project=chromium`.
+- Mobile UI project: `playwright test --project=mobile-chromium`.
 
 ## Page Object Model
 
@@ -59,16 +73,23 @@ Suggested clients:
 - `FeedingsClient`
 - `AdminClient`
 
+Current clients live in `tests/services` and are used by fixtures and setup services. Business setup helpers live in `tests/services/test-data.service.ts`.
+
 ## Fixtures
 
-Recommended fixtures:
+Current fixtures:
 
-- `apiContext`
-- `testUser`
-- `authToken`
-- `snakeProfile`
-- `secondUser`
+- `authUser`
+- `apiClient`
+- `authClient`
 - `adminClient`
+- `calculationsClient`
+- `feedingsClient`
+- `snakeProfilesClient`
+- `testProfile`
+- `testRunId`
+- `testUserEmailPrefix`
+- `cleanup`
 
 Fixture requirements:
 
@@ -104,7 +125,7 @@ Avoid:
 
 ## Allure
 
-When Allure is introduced:
+Allure is configured in `playwright.config.ts` through `allure-playwright`.
 
 - Add feature/story labels.
 - Add severity for P0/P1/P2 tests.
@@ -113,17 +134,17 @@ When Allure is introduced:
 
 ## CI/CD
 
-Recommended pipeline order:
+Current CI pipeline:
 
 1. Install dependencies.
-2. Lint/build frontend.
-3. Run backend unit tests.
-4. Start or target test backend/frontend.
-5. Run API smoke.
-6. Run UI smoke.
-7. Upload reports and artifacts.
+2. Install Playwright Chromium.
+3. Run smoke tests on pull requests.
+4. Run regression tests on pushes to `main`.
+5. Run API security tests.
+6. Generate Allure HTML report when `allure-results` exists.
+7. Upload Playwright and Allure artifacts.
 
-Regression can run nightly or manually.
+Post-deploy smoke tests run in a separate workflow after successful CI. ZAP baseline scan runs in a separate scheduled/manual workflow.
 
 ## Naming Conventions
 
@@ -153,5 +174,5 @@ test("shows 403 when user fetches another user's snake profile", async () => {})
 ## Open Questions
 
 - Should `data-testid` attributes be added before UI automation starts?
-- Should Playwright run against local services in CI or deployed test environments?
-- Which Allure package/version should be standardized?
+- Should CI add Firefox/WebKit projects or keep Chromium-only execution?
+- Should security tests remain a CI step or move to a separate required job?

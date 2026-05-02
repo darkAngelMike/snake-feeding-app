@@ -53,6 +53,9 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: npx playwright test --grep @regression
 
+      - name: Run Playwright security tests
+        run: npx playwright test --project=api --grep @security
+
       - name: Generate Allure HTML report
         if: always()
         run: |
