@@ -1,0 +1,19 @@
+name: OWASP ZAP Baseline Scan
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  zap-baseline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: "https://snake-feeding-app.vercel.app"
+          cmd_options: "-a"
+          fail_action: false
+          artifact_name: zap-baseline-report
