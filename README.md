@@ -4,6 +4,22 @@ React and Express application for planning and tracking ball python feedings. Th
 
 The business and testing source of truth is in `docs/`.
 
+---
+
+## 🚀 QA Automation / SDET Portfolio Project
+
+This project demonstrates a production-like QA Automation and Security Testing setup:
+
+- Playwright UI + API tests
+- CI/CD with GitHub Actions
+- Post-deployment testing on real environments
+- Allure reporting
+- Swagger/OpenAPI documentation
+- Security testing (Burp Suite, OWASP ZAP, automated API security tests)
+- Backend + Frontend deployment (Render + Vercel)
+
+---
+
 ## Tech Stack
 
 - Frontend: Vite, React, Supabase Auth client
@@ -15,6 +31,8 @@ The business and testing source of truth is in `docs/`.
 - CI/CD: GitHub Actions
 - Deployment: Render backend, Vercel frontend
 - Security: Burp Suite manual tests, OWASP ZAP baseline scan, Helmet, CORS, CSP/security headers
+
+---
 
 ## QA / SDET Highlights
 
@@ -31,12 +49,30 @@ The business and testing source of truth is in `docs/`.
 - OWASP ZAP baseline scan in GitHub Actions
 - CSP, CORS and security headers hardening through Vercel config and backend Helmet/CORS
 
+---
+
+## 🧪 Test Coverage
+
+- Authentication and authorization
+- Input validation and error handling
+- Business logic (feeding rules)
+- Ownership and RLS (multi-user scenarios)
+- Edge cases (weight assessment)
+- Security checks:
+  - Missing/invalid token
+  - IDOR attempts
+  - Header spoofing
+  - Input abuse
+
+---
+
 ## Test Architecture
 
 Playwright tests are split by level and purpose:
 
 - `tests/api/smoke`: API smoke coverage for auth, profile, calculation, feeding and history flow
 - `tests/api/regression`: API regression coverage for auth validation, ownership/RLS and weight assessment
+- `tests/api/security`: API security tests (auth, IDOR, spoofing, validation, rate-limit observation)
 - `tests/e2e/smoke`: browser smoke coverage for the critical user journey
 - `tests/e2e/regression`: browser regression coverage for dashboard, feeding and profile validation behavior
 - `tests/pages`: Page Object Model classes for UI flows
@@ -51,161 +87,64 @@ Test strategy and data rules are documented in:
 - `docs/qa-automation-guidelines.md`
 - `docs/playwright-test-setup.md`
 
+---
+
 ## CI/CD Overview
 
 GitHub Actions workflows are in `.github/workflows`:
 
-- `ci.yml`: installs dependencies, runs smoke tests on pull requests and regression tests on pushes to `main`, then uploads Playwright and Allure artifacts
+- `ci.yml`: installs dependencies, runs smoke tests on pull requests, regression tests on pushes to `main`, and security tests (`@security`), then uploads Playwright and Allure artifacts
 - `post-deploy-smoke.yml`: runs smoke tests against deployed/staging URLs after a successful CI workflow
 - `allure-pages.yml`: publishes the Allure HTML report to GitHub Pages after successful CI
 - `zap-baseline.yml`: runs scheduled and manual OWASP ZAP baseline scans against the deployed frontend
 
 More detail is in `docs/ci-cd-overview.md`.
 
+---
+
 ## Deployment Overview
 
-- Backend is intended for Render deployment.
-- Frontend is intended for Vercel deployment.
-- Local Playwright runs start the backend and frontend through `playwright.config.ts` unless `TEST_ENV=staging` is set.
-- Production/staging URLs are supplied through GitHub Actions secrets for post-deploy tests.
+- Backend is deployed on Render
+- Frontend is deployed on Vercel
+- Local Playwright runs start backend and frontend via `playwright.config.ts` unless `TEST_ENV=staging` is set
+- Production/staging URLs are supplied through GitHub Actions secrets for post-deploy tests
 
-## Security Testing
+---
 
-Security coverage combines manual Burp Suite checks, automated API regression checks and OWASP ZAP baseline scanning.
+## 🔐 Security Testing
 
-Manual security tests documented for this project:
+Security coverage combines manual testing, automated regression checks and CI scanning.
+
+Manual security tests:
 
 | Test | Expected result |
-| --- | --- |
-| Missing `Authorization` header on protected endpoints | `401` JSON response |
-| Invalid JWT token | `401` JSON response |
-| IDOR attempt using another user's `snake_id` | `403` JSON response |
-| Header spoofing with `X-User-Id` and `X-Role` | Headers ignored; authenticated Supabase user context is used |
-| `POST /admin/cleanup` without valid `x-admin-secret` | `403` JSON response |
-| Invalid input payloads | `400` JSON response |
-| Future feeding calculation date | Blocked by business validation |
-| OWASP ZAP baseline scan | Runs in GitHub Actions and uploads `zap-baseline-report` artifact |
+|------|---------------|
+| Missing `Authorization` header | `401` |
+| Invalid JWT token | `401` |
+| IDOR on another user's `snake_id` | `403` |
+| Header spoofing (`X-User-Id`, `X-Role`) | Ignored |
+| `POST /admin/cleanup` without secret | `403` |
+| Invalid payloads | `400` |
+| Future feeding date | Blocked |
+| OWASP ZAP scan | Report artifact |
 
 Security implementation notes:
 
-- Backend protected endpoints require `Authorization: Bearer <supabase_access_token>`.
-- Backend identifies users from Supabase Auth and request-scoped Supabase client context.
-- User-scoped endpoints must not trust `user_id` from request bodies.
-- `snake_profiles` and `feedings` are protected by ownership checks and RLS context.
-- Backend security headers are configured through Helmet.
-- Backend CORS allows the deployed frontend and local development origins.
-- Frontend security headers are defined in `client/vercel.json`.
+- Backend uses `Authorization: Bearer <token>`
+- User identity is derived from Supabase Auth context
+- Ownership and RLS protect user data
+- Helmet provides security headers
+- CORS is restricted to allowed origins
+- Frontend security headers are defined in `client/vercel.json`
 
-Detailed notes are in `docs/security-testing-summary.md`.
+More details in `docs/security-testing-summary.md`.
 
-## How To Run
+---
 
-Install root dependencies:
+## ⚙️ How To Run
+
+Install dependencies:
 
 ```bash
 npm install
 ```
-
-Install frontend and backend dependencies when working locally:
-
-```bash
-npm --prefix client install
-npm --prefix server install
-```
-
-Run backend locally:
-
-```bash
-npm run start:backend
-```
-
-This maps to `npm --prefix server start`.
-
-Run frontend locally:
-
-```bash
-npm run start:frontend
-```
-
-This maps to `npm --prefix client run dev -- --host 127.0.0.1 --port 5173 --strictPort`.
-
-Run smoke tests:
-
-```bash
-npx playwright test --grep @smoke
-```
-
-or:
-
-```bash
-npm run test:smoke
-```
-
-Run regression tests:
-
-```bash
-npx playwright test --grep @regression
-```
-
-or:
-
-```bash
-npm run test:regression
-```
-
-Run API tests:
-
-```bash
-npm run test:api
-```
-
-Run UI tests:
-
-```bash
-npm run test:e2e
-```
-
-Generate Allure report from existing `allure-results`:
-
-```bash
-npm run test:allure
-```
-
-The script maps to:
-
-```bash
-allure generate allure-results --clean -o allure-report
-```
-
-## Swagger / OpenAPI
-
-Swagger UI is served by the backend at:
-
-```text
-http://localhost:3000/api-docs
-```
-
-The OpenAPI configuration is in `server/config/openapi.js`, with endpoint annotations in `server/routes/*.js`.
-
-API contract documentation is also maintained in `docs/api-documentation.md`.
-
-## Repository Structure
-
-- `client`: Vite + React frontend, Supabase frontend client and Vercel config
-- `server`: Express backend, routes, controllers, services, repositories, middleware and OpenAPI config
-- `tests/api`: Playwright API smoke and regression tests
-- `tests/e2e`: Playwright browser E2E smoke and regression tests
-- `tests/pages`: Page Object Model classes
-- `tests/services`: API client classes and test setup services
-- `docs`: business requirements, API contract, QA strategy, test data strategy and project overviews
-- `.github/workflows`: CI, post-deploy smoke, Allure Pages and OWASP ZAP workflows
-
-## Reference Documentation
-
-- `docs/business-requirements.md`
-- `docs/api-documentation.md`
-- `docs/test-strategy.md`
-- `docs/test-data-strategy.md`
-- `docs/qa-automation-guidelines.md`
-- `docs/security-testing-summary.md`
-- `docs/ci-cd-overview.md`
