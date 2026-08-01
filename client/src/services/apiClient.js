@@ -23,3 +23,19 @@ export const getApiErrorMessage = (response, fallback) => {
 
   return fallback;
 };
+
+export const deleteFeedingApi = async (apiBaseUrl, token, feedingId) => {
+  const response = await fetch(`${apiBaseUrl}/feedings/${feedingId}`, {
+    method: "DELETE",
+    headers: getApiHeaders(token),
+  });
+  return parseApiResponse(response);
+};
+
+export const deleteProfileApi = async (apiBaseUrl, token, profileId) => {
+  const response = await fetch(`${apiBaseUrl}/snake-profiles/${profileId}`, {
+    method: "DELETE",
+    headers: getApiHeaders(token),
+  });
+  return parseApiResponse(response);
+};

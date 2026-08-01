@@ -566,6 +566,36 @@ function App() {
     await fetchHistory();
   };
 
+  const deleteFeeding = async (feedingId) => {
+    if (!session || !feedingId) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/feedings/${feedingId}`, {
+        method: "DELETE",
+        headers: getApiHeaders(session.access_token),
+      });
+
+      const data = await parseApiResponse(response);
+
+      if (!response.ok) {
+        throw new Error(
+          getApiErrorMessage(
+            response,
+            data.error || "Nie udało się usunąć wpisu karmienia.",
+          ),
+        );
+      }
+
+      await fetchProfile();
+      await fetchHistory();
+    } catch (error) {
+      console.error(error);
+      setDashboardMessage(
+        error.message || "Nie udało się usunąć wpisu karmienia.",
+      );
+    }
+  };
+
   if (loading) {
     return (
       <main className="app-shell app-shell--center">
@@ -660,6 +690,7 @@ function App() {
         history={history}
         setView={setView}
         onLogout={logout}
+        onDeleteFeeding={deleteFeeding}
       />
     );
   }

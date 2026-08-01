@@ -1,4 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const isCI = Boolean(process.env.CI);
 const isStaging = process.env.TEST_ENV === "staging";

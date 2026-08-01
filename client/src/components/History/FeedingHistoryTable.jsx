@@ -6,6 +6,7 @@ export function FeedingHistoryTable({
   history,
   setView,
   onLogout,
+  onDeleteFeeding,
 }) {
   return (
     <main className="app-shell">
@@ -43,6 +44,25 @@ export function FeedingHistoryTable({
                       Status: {feedingStatusLabels[item.status] || item.status}
                     </span>
                   </div>
+                  {onDeleteFeeding && (
+                    <div className="item-actions">
+                      <button
+                        className="button button--ghost button--danger"
+                        title="Usuń ten wpis karmienia"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Czy na pewno chcesz usunąć karmienie z dnia ${item.feeding_date}?`,
+                            )
+                          ) {
+                            onDeleteFeeding(item.id);
+                          }
+                        }}
+                      >
+                        🗑️ Usuń
+                      </button>
+                    </div>
+                  )}
                 </div>
               </article>
             ))}
