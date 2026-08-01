@@ -1,15 +1,25 @@
+import * as allure from "allure-js-commons";
 import { test, expect } from "../../fixtures/test-fixtures";
 import { buildFeeding, dateDaysAgo } from "../../data/builders";
 import { createSnakeProfile } from "../../services/test-data.service";
 
 // Testy algorytmu oceny trendu masy ciała węża na podstawie historii posiłków
 test.describe("API - Ocena trendu wagi węża", () => {
+  test.beforeEach(async () => {
+    await allure.parentSuite("Testy API");
+    await allure.suite("Regresja");
+    await allure.subSuite("Kondycja i Trend Wagi");
+    await allure.epic("Algorytmy i Analityka");
+    await allure.feature("Ocena Trendu Masy Ciała");
+  });
+
   test("Zwraca status 'Brak danych' (unknown), gdy wąż nie posiada jeszcze historii karmień @regression", async ({
     apiClient,
     cleanup,
   }) => {
     void cleanup;
     let profileId = "";
+    await allure.story("Domyślny status wagi dla nowego węża");
 
     await test.step("Utworzenie nowego profilu węża bez żadnych zarejestrowanych posiłków", async () => {
       const profile = await createSnakeProfile(apiClient.snakeProfiles);
@@ -32,6 +42,7 @@ test.describe("API - Ocena trendu wagi węża", () => {
   }) => {
     void cleanup;
     let profileId = "";
+    await allure.story("Algorytm ostrzegania o nagłym przyroście wagi (rapid_gain)");
 
     await test.step("Utworzenie profilu węża do symulacji przyrostu masy", async () => {
       const profile = await createSnakeProfile(apiClient.snakeProfiles);

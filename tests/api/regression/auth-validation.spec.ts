@@ -1,3 +1,4 @@
+import * as allure from "allure-js-commons";
 import { test, expect } from "../../fixtures/test-fixtures";
 import {
   buildCalculationInput,
@@ -11,11 +12,21 @@ import {
 
 // Testy regresyjne autoryzacji oraz walidacji pól danych wejściowych API
 test.describe("API - Walidacja i autoryzacja (Regresja)", () => {
+  test.beforeEach(async () => {
+    await allure.parentSuite("Testy API");
+    await allure.suite("Regresja");
+    await allure.subSuite("Walidacja Danych Wejściowych");
+    await allure.epic("Bezpieczeństwo i Walidacja API");
+    await allure.feature("Autentykacja i Formularze");
+  });
+
   test("Chronione zasoby odrzucają żądania bez tokena autoryzacji (status 401) @regression @security", async ({
     calculationsClient,
     feedingsClient,
     snakeProfilesClient,
   }) => {
+    await allure.story("Wymóg tokena Bearer dla chronionych punktów końcowych");
+
     await test.step("Weryfikacja wymogu autoryzacji dla listy profili węży", async () => {
       const profileResponse = await snakeProfilesClient.list();
       expect(profileResponse.status()).toBe(401);
@@ -41,6 +52,7 @@ test.describe("API - Walidacja i autoryzacja (Regresja)", () => {
     cleanup,
   }) => {
     void cleanup;
+    await allure.story("Walidacja zakresu wagi (50-5000g) i wymaganych pól profilu");
 
     await test.step("Odrzucenie tworzenia profilu przy braku wymaganych pól", async () => {
       const missingResponse = await apiClient.snakeProfiles.create({});
@@ -67,6 +79,7 @@ test.describe("API - Walidacja i autoryzacja (Regresja)", () => {
   }) => {
     void cleanup;
     let profileId = "";
+    await allure.story("Obliczanie planu żywieniowego dla poprawnych i błędnych danych");
 
     await test.step("Utworzenie profilu bazowego do testu kalkulacji", async () => {
       const profile = await createSnakeProfile(apiClient.snakeProfiles);
@@ -92,6 +105,7 @@ test.describe("API - Walidacja i autoryzacja (Regresja)", () => {
   }) => {
     void cleanup;
     let profileId = "";
+    await allure.story("Obsługa statusów karmienia: zjedzone (success) oraz odmowa (refused)");
 
     await test.step("Utworzenie profilu węża do rejestracji karmień", async () => {
       const profile = await createSnakeProfile(apiClient.snakeProfiles);

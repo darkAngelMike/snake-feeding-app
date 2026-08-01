@@ -1,3 +1,4 @@
+import * as allure from "allure-js-commons";
 import { test, expect } from "../../fixtures/test-fixtures";
 import { buildFeeding } from "../../data/builders";
 import { DashboardPage } from "../../pages/dashboard.page";
@@ -7,6 +8,15 @@ import { authenticatePageWithSupabase } from "../../services/auth.client";
 
 // Testy regresyjne zachowania interfejsu pulpitu oraz formularza karmień
 test.describe("UI E2E - Pulpit i rejestracja karmienia (Regresja)", () => {
+  test.beforeEach(async () => {
+    await allure.parentSuite("Testy UI E2E");
+    await allure.suite("Regresja");
+    await allure.subSuite("Pulpit Nawigacyjny");
+    await allure.epic("Interfejs Użytkownika (UI)");
+    await allure.feature("Pulpit i Historia");
+    await allure.story("Aktualizacja statusów po dodaniu posiłku");
+  });
+
   test("Zapisanie karmienia aktualizuje interfejs i utrzymuje widoczny status wagi @regression", async ({
     authUser,
     page,

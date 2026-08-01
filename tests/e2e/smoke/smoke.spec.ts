@@ -1,3 +1,4 @@
+import * as allure from "allure-js-commons";
 import { test } from "../../fixtures/test-fixtures";
 import { buildFeeding } from "../../data/builders";
 import { DashboardPage } from "../../pages/dashboard.page";
@@ -7,6 +8,15 @@ import { authenticatePageWithSupabase } from "../../services/auth.client";
 
 // Testy E2E interfejsu użytkownika w przeglądarce (Ścieżka Krytyczna)
 test.describe("UI E2E - Przeglądarkowe testy dymne (Smoke)", () => {
+  test.beforeEach(async () => {
+    await allure.parentSuite("Testy UI E2E");
+    await allure.suite("Smoke");
+    await allure.subSuite("Ścieżka Opiekuna Gada");
+    await allure.epic("Interfejs Użytkownika (UI)");
+    await allure.feature("Przepływ Krytyczny Przeglądarki");
+    await allure.story("Kompletna ścieżka kalkulacji i zapisu karmienia");
+  });
+
   test("Zalogowany opiekun może obliczyć termin, zarejestrować karmienie i zobaczyć wpis w historii @smoke", async ({
     authUser,
     page,

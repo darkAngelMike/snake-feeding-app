@@ -1,11 +1,22 @@
+import * as allure from "allure-js-commons";
 import { test, expect } from "../../fixtures/test-fixtures";
 import { buildCalculationInput } from "../../data/builders";
 
 // Testy bezpieczeństwa i walidacji zasad biznesowych API
 test.describe("API - Testy bezpieczeństwa", () => {
+  test.beforeEach(async () => {
+    await allure.parentSuite("Testy API");
+    await allure.suite("Security");
+    await allure.subSuite("Weryfikacja Tokenów i Reguł");
+    await allure.epic("Bezpieczeństwo i Walidacja API");
+    await allure.feature("Testy Bezpieczeństwa API");
+  });
+
   test("Odrzuca nieprawidłowy token JWT zwrotnym błędem JSON i statusem 401 @security", async ({
     snakeProfilesClient,
   }) => {
+    await allure.story("Odrzucanie błędnych tokenów JWT");
+
     await test.step("Weryfikacja odrzucenia zapytania z unieważnionym lub błędnym ciągiem JWT", async () => {
       const response = await snakeProfilesClient
         .withToken("invalid.jwt.token")
@@ -23,6 +34,7 @@ test.describe("API - Testy bezpieczeństwa", () => {
     testProfile,
   }) => {
     void cleanup;
+    await allure.story("Zakaz wyliczania karmień dla dat w przyszłości");
 
     await test.step("Weryfikacja blokady kalkulacji przy dacie ostatniego karmienia w przyszłości (status 400)", async () => {
       const response = await apiClient.calculations.calculate({
@@ -39,6 +51,8 @@ test.describe("API - Testy bezpieczeństwa", () => {
   test("Weryfikuje bezpieczne przetwarzanie powtarzalnych zapytań bez wymagania blokady limitu @security", async ({
     apiClient,
   }, testInfo) => {
+    await allure.story("Obserwacja częstotliwości zapytań (Rate Limit)");
+
     await test.step("Wysłanie serii 5 zapytań z autoryzacją i analiza kodów odpowiedzi", async () => {
       const responses = [];
 

@@ -1,9 +1,19 @@
+import * as allure from "allure-js-commons";
 import { test, expect } from "../../fixtures/test-fixtures";
 import { buildSnakeProfile } from "../../data/builders";
 import { authenticatePageWithSupabase } from "../../services/auth.client";
 
 // Testy regresyjne walidacji komórek formularza profilu węża
 test.describe("UI E2E - Walidacja formularza profilu węża (Regresja)", () => {
+  test.beforeEach(async () => {
+    await allure.parentSuite("Testy UI E2E");
+    await allure.suite("Regresja");
+    await allure.subSuite("Walidacja Formularza");
+    await allure.epic("Interfejs Użytkownika (UI)");
+    await allure.feature("Formularz Profilu Węża");
+    await allure.story("Walidacja zakresów wagi (50-5000g) i wymaganych pól");
+  });
+
   test("Formularz profilu wskazuje tylko brakujące pola oraz weryfikuje dopuszczalny zakres wagi (50-5000 g) @regression", async ({
     authUser,
     cleanup,

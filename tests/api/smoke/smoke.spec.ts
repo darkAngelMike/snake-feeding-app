@@ -1,3 +1,4 @@
+import * as allure from "allure-js-commons";
 import { test, expect } from "../../fixtures/test-fixtures";
 import {
   buildCalculationInput,
@@ -7,6 +8,15 @@ import {
 
 // Paczka testów dymnych (Smoke) weryfikujących podstawowy przepływ API
 test.describe("API - Testy dymne (Smoke)", () => {
+  test.beforeEach(async () => {
+    await allure.parentSuite("Testy API");
+    await allure.suite("Smoke");
+    await allure.subSuite("Główna Ścieżka Krytyczna");
+    await allure.epic("System Żywienia Pytona Królewskiego");
+    await allure.feature("Przepływ Krytyczny API");
+    await allure.story("Pełny cykl życia profilu i karmienia");
+  });
+
   test("Ścieżka krytyczna: autentykacja, tworzenie profilu węża, kalkulacja karmienia, zapis posiłku oraz pobranie historii @smoke", async ({
     apiClient,
     cleanup,

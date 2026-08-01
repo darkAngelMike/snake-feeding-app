@@ -1,9 +1,19 @@
+import * as allure from "allure-js-commons";
 import { test, expect } from "../../fixtures/test-fixtures";
 import { buildFeeding, buildQaUser } from "../../data/builders";
 import { createSnakeProfile } from "../../services/test-data.service";
 
 // Testy izolacji danych użytkowników oraz weryfikacja zasad Row Level Security (RLS)
 test.describe("API - Izolacja danych i ochrona własności (RLS)", () => {
+  test.beforeEach(async () => {
+    await allure.parentSuite("Testy API");
+    await allure.suite("Regresja");
+    await allure.subSuite("Prawa Własności i RLS");
+    await allure.epic("Bezpieczeństwo i Walidacja API");
+    await allure.feature("Izolacja Danych (RLS)");
+    await allure.story("Ochrona zasobów użytkownika przed IDOR i sfałszowanymi nagłówkami");
+  });
+
   test("Użytkownik B nie ma dostępu do profilu ani historii karmień węża należącego do Użytkownika A @regression @security", async ({
     apiClient,
     authUser,

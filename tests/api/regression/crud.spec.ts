@@ -1,8 +1,18 @@
+import * as allure from "allure-js-commons";
 import { test, expect } from "../../fixtures/test-fixtures";
 import { buildFeeding, buildSnakeProfile } from "../../data/builders";
 
 // Testy regresyjne pełnego cyklu CRUD (DELETE i PATCH profili oraz karmień)
 test.describe("API - Pełny cykl CRUD i bezpieczeństwo operacji edycji i usuwania", () => {
+  test.beforeEach(async () => {
+    await allure.parentSuite("Testy API");
+    await allure.suite("Regresja");
+    await allure.subSuite("Operacje Usunięcia i Edycji");
+    await allure.epic("Zarządzanie Danymi Hodowli");
+    await allure.feature("Pełny Cykl CRUD API");
+    await allure.story("Edycja i usuwanie profili oraz wpisów karmienia");
+  });
+
   test("Użytkownik może zaktualizować i usunąć własny profil węża oraz wpis karmienia @regression", async ({
     apiClient,
     cleanup,
