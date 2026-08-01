@@ -42,9 +42,10 @@ jobs:
           npm run start:backend &
           for i in {1..30}; do curl -s http://localhost:3000 && break || sleep 1; done
 
+      - name: Setup k6 CLI
+        uses: grafana/setup-k6-action@v1
+
       - name: Run k6 performance load tests
-        uses: grafana/k6-action@v0.4.0
-        with:
-          filename: tests/performance/k6-load-test.js
+        run: k6 run tests/performance/k6-load-test.js
         env:
           API_BASE_URL: http://localhost:3000
