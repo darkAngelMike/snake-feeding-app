@@ -9,7 +9,13 @@ const options = {
       version: "1.0.0",
       description: "API for snake feeding tracking and recommendations",
     },
-    servers: [{ url: "http://localhost:3000" }],
+    servers: [
+      { url: "http://localhost:3000", description: "Środowisko Lokalne" },
+      {
+        url: "https://snake-backend-qpzk.onrender.com",
+        description: "Serwer Produkcyjny (Render)",
+      },
+    ],
     components: {
       securitySchemes: {
         bearerAuth: {
