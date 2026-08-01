@@ -78,8 +78,22 @@ async function updateLastFeedingDate(
   }
 }
 
+async function deleteProfile(id, client = getSupabaseClient()) {
+  try {
+    return await client
+      .from("snake_profiles")
+      .delete()
+      .eq("id", id)
+      .select()
+      .maybeSingle();
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
 module.exports = {
   createProfile,
+  deleteProfile,
   findById,
   findByUserId,
   updateLastFeedingDate,

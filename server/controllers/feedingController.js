@@ -309,7 +309,139 @@ async function createFeeding(req, res) {
   });
 }
 
+async function deleteFeeding(req, res) {
+  const userId = req.user.id;
+  const { data: feeding, error: findError } = await feedingsRepository.findById(
+    req.params.id,
+    req.supabase,
+  );
+
+  if (findError) {
+    logger.error("Nie udało się zweryfikować karmienia", findError);
+    return res.status(isPermissionError(findError) ? 403 : 500).json({
+      error: isPermissionError(findError)
+        ? "Brak dostępu do karmienia"
+        : "Błąd weryfikacji karmienia",
+    });
+  }
+
+  if (!feeding || feeding.user_id !== userId) {
+    return res.status(403).json({
+      error: "Brak dostępu do karmienia",
+    });
+  }
+
+  const { data, error } = await feedingsRepository.deleteFeeding(
+    req.params.id,
+    req.supabase,
+  );
+
+  if (error) {
+    logger.error("Nie udało się usunąć karmienia", error);
+    return res.status(isPermissionError(error) ? 403 : 500).json({
+      error: isPermissionError(error)
+        ? "Brak uprawnień do usunięcia karmienia"
+        : "Nie udało się usunąć karmienia",
+    });
+  }
+
+  return res.json({
+    success: true,
+    message: "Wpis karmienia został usunięty",
+    data: sanitizeFeeding(data),
+  });
+}
+
+async function updateFeeding(req, res) {
+  const userId = req.user.id;
+  const { data: existingFeeding, error: findError } =
+    await feedingsRepository.findById(req.params.id, req.supabase);
+
+  if (findError) {
+    logger.error("Nie udało się zweryfikować karmienia", findError);
+    return res.status(isPermissionError(findError) ? 403 : 500).json({
+      error: isPermissionError(findError)
+        ? "Brak dostępu do karmienia"
+        : "Błąd weryfikacji karmienia",
+    });
+  }
+
+  if (!existingFeeding || existingFeeding.user_id !== userId) {
+    return res.status(403).json({
+      error: "Brak dostępu do karmienia",
+    });
+  }
+
+  const payload = req.body || {};
+  const updates = {};
+
+  if (payload.feeding_date !== undefined) {
+    if (!isValidDateOnly(payload.feeding_date)) {
+      return res.status(400).json({
+        error: "Niepoprawne dane karmienia",
+        details: ["feeding_date musi mieć format YYYY-MM-DD i być poprawną datą"],
+      });
+    }
+    updates.feeding_date = payload.feeding_date;
+  }
+
+  if (payload.snake_weight_g !== undefined) {
+    const weight = toPositiveInteger(payload.snake_weight_g);
+    if (!weight) {
+      return res.status(400).json({
+        error: "Niepoprawne dane karmienia",
+        details: ["snake_weight_g musi być dodatnią liczbą całkowitą"],
+      });
+    }
+    updates.snake_weight_g = weight;
+  }
+
+  if (payload.meal_weight_g !== undefined) {
+    const meal = toPositiveInteger(payload.meal_weight_g);
+    if (!meal) {
+      return res.status(400).json({
+        error: "Niepoprawne dane karmienia",
+        details: ["meal_weight_g musi być dodatnią liczbą całkowitą"],
+      });
+    }
+    updates.meal_weight_g = meal;
+  }
+
+  if (payload.status !== undefined) {
+    const status = normalizeStatus(payload.status);
+    if (!VALID_FEEDING_STATUSES.has(status)) {
+      return res.status(400).json({
+        error: "Niepoprawne dane karmienia",
+        details: ["status musi mieć jedną z wartości: success, refused, skipped"],
+      });
+    }
+    updates.status = status;
+  }
+
+  const { data, error } = await feedingsRepository.updateFeeding(
+    req.params.id,
+    updates,
+    req.supabase,
+  );
+
+  if (error) {
+    logger.error("Nie udało się zaktualizować wpisu karmienia", error);
+    return res.status(isPermissionError(error) ? 403 : 500).json({
+      error: isPermissionError(error)
+        ? "Brak uprawnień do aktualizacji karmienia"
+        : "Nie udało się zaktualizować wpisu karmienia",
+    });
+  }
+
+  return res.json({
+    success: true,
+    data: sanitizeFeeding(data),
+  });
+}
+
 module.exports = {
   createFeeding,
+  deleteFeeding,
   getFeedings,
+  updateFeeding,
 };

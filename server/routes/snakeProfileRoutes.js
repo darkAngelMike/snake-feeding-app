@@ -234,4 +234,47 @@ router.patch(
   snakeProfileController.updateProfile,
 );
 
+/**
+ * @swagger
+ * /snake-profiles/{id}:
+ *   delete:
+ *     tags: [Snake Profiles]
+ *     summary: Delete a snake profile
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Snake profile id to delete.
+ *     responses:
+ *       200:
+ *         description: Snake profile deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Profil węża został usunięty"
+ *                 data:
+ *                   type: object
+ *       401:
+ *         description: Missing or invalid bearer token.
+ *       403:
+ *         description: Snake profile does not belong to the authenticated user or RLS denied access.
+ */
+router.delete(
+  "/snake-profiles/:id",
+  requireAuth,
+  snakeProfileController.deleteProfile,
+);
+
 module.exports = router;

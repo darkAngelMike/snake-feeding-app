@@ -156,4 +156,86 @@ router.get("/feedings", requireAuth, feedingController.getFeedings);
  */
 router.post("/feedings", requireAuth, feedingController.createFeeding);
 
+/**
+ * @swagger
+ * /feedings/{id}:
+ *   patch:
+ *     tags: [Feedings]
+ *     summary: Update a feeding entry
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Feeding entry id to update.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               feeding_date:
+ *                 type: string
+ *                 format: date
+ *               snake_weight_g:
+ *                 type: integer
+ *               meal_weight_g:
+ *                 type: integer
+ *               status:
+ *                 type: string
+ *                 enum: [success, refused, skipped]
+ *     responses:
+ *       200:
+ *         description: Feeding entry updated.
+ *       400:
+ *         description: Invalid feeding payload.
+ *       401:
+ *         description: Missing or invalid bearer token.
+ *       403:
+ *         description: Feeding entry does not belong to the authenticated user or RLS denied access.
+ */
+router.patch("/feedings/:id", requireAuth, feedingController.updateFeeding);
+
+/**
+ * @swagger
+ * /feedings/{id}:
+ *   delete:
+ *     tags: [Feedings]
+ *     summary: Delete a feeding entry
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Feeding entry id to delete.
+ *     responses:
+ *       200:
+ *         description: Feeding entry deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Wpis karmienia został usunięty"
+ *                 data:
+ *                   type: object
+ *       401:
+ *         description: Missing or invalid bearer token.
+ *       403:
+ *         description: Feeding entry does not belong to the authenticated user or RLS denied access.
+ */
+router.delete("/feedings/:id", requireAuth, feedingController.deleteFeeding);
+
 module.exports = router;

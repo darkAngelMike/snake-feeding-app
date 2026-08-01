@@ -231,8 +231,49 @@ async function updateProfile(req, res) {
   });
 }
 
+async function deleteProfile(req, res) {
+  const { data: existingProfile, error: findError } =
+    await snakeProfilesRepository.findById(req.params.id, req.supabase);
+
+  if (findError) {
+    logger.error("Nie udało się zweryfikować profilu węża", findError);
+    return res.status(isPermissionError(findError) ? 403 : 500).json({
+      error: isPermissionError(findError)
+        ? "Brak dostępu do profilu węża"
+        : "Błąd weryfikacji profilu węża",
+    });
+  }
+
+  if (!existingProfile || existingProfile.user_id !== req.user.id) {
+    return res.status(403).json({
+      error: "Brak dostępu do profilu węża",
+    });
+  }
+
+  const { data, error } = await snakeProfilesRepository.deleteProfile(
+    req.params.id,
+    req.supabase,
+  );
+
+  if (error) {
+    logger.error("Nie udało się usunąć profilu węża", error);
+    return res.status(isPermissionError(error) ? 403 : 500).json({
+      error: isPermissionError(error)
+        ? "Brak uprawnień do usunięcia profilu węża"
+        : "Nie udało się usunąć profilu węża",
+    });
+  }
+
+  return res.json({
+    success: true,
+    message: "Profil węża został usunięty",
+    data: sanitizeProfile(data),
+  });
+}
+
 module.exports = {
   createProfile,
+  deleteProfile,
   getProfile,
   getProfiles,
   updateProfile,

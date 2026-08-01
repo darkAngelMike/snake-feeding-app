@@ -397,6 +397,24 @@ Security notes:
 - Requires `SUPABASE_SERVICE_ROLE_KEY` in backend env.
 - Deletes data in order: `feeding_calculations`, `feedings`, `snake_profiles`, then Auth users.
 
+### DELETE /snake-profiles/:id
+
+- Auth: yes.
+- Purpose: delete a snake profile owned by the authenticated user.
+- Response: `{ "success": true, "message": "Profil węża został usunięty", "data": { ... } }`
+
+### PATCH /feedings/:id
+
+- Auth: yes.
+- Purpose: update an existing feeding entry owned by the authenticated user.
+- Body: partial feeding payload (`feeding_date`, `snake_weight_g`, `meal_weight_g`, `status`).
+
+### DELETE /feedings/:id
+
+- Auth: yes.
+- Purpose: delete a feeding entry owned by the authenticated user.
+- Response: `{ "success": true, "message": "Wpis karmienia został usunięty", "data": { ... } }`
+
 ### JSON 404
 
 Unknown routes return:
@@ -409,6 +427,5 @@ Status: `404`.
 
 ## Open Questions
 
-- Should API expose explicit delete endpoints for profiles/feedings in future CRUD?
 - Should `POST /feedings` support statuses other than `success` from frontend?
 - Should API responses standardize on `{ success, data }` for every endpoint including `/calculate`?

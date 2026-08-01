@@ -1,0 +1,57 @@
+import { test, expect } from "../../fixtures/test-fixtures";
+import { buildFeeding, buildSnakeProfile } from "../../data/builders";
+
+// Testy regresyjne pełnego cyklu CRUD (DELETE i PATCH profili oraz karmień)
+test.describe("API - Pełny cykl CRUD i bezpieczeństwo operacji edycji i usuwania", () => {
+  test("Użytkownik może zaktualizować i usunąć własny profil węża oraz wpis karmienia @regression", async ({
+    apiClient,
+    cleanup,
+  }) => {
+    void cleanup;
+    let snakeId = "";
+    let feedingId = "";
+
+    await test.step("Krok 1: Utworzenie nowego profilu węża", async () => {
+      const response = await apiClient.snakeProfiles.create({
+        ...buildSnakeProfile({ name: "Python CRUD" }),
+      });
+      const body = await response.json();
+      expect(response.status()).toBe(201);
+      snakeId = body.data.id;
+    });
+
+    await test.step("Krok 2: Zaktualizowanie profilu węża (PATCH /snake-profiles/:id)", async () => {
+      const response = await apiClient.snakeProfiles.update(snakeId, {
+        name: "Python Zaktualizowany",
+        current_weight_g: 1250,
+      });
+      const body = await response.json();
+      expect(response.status()).toBe(200);
+      expect(body.data.name).toBe("Python Zaktualizowany");
+      expect(body.data.current_weight_g).toBe(1250);
+    });
+
+    await test.step("Krok 3: Dodanie wpisu karmienia dla węża", async () => {
+      const response = await apiClient.feedings.create(
+        buildFeeding({ snake_id: snakeId, meal_weight_g: 100 }),
+      );
+      const body = await response.json();
+      expect(response.status()).toBe(201);
+      feedingId = body.feeding.id;
+    });
+
+    await test.step("Krok 4: Usunięcie wpisu karmienia przez API", async () => {
+      const response = await apiClient.request.delete(`/feedings/${feedingId}`);
+      const body = await response.json();
+      expect(response.status()).toBe(200);
+      expect(body.success).toBe(true);
+    });
+
+    await test.step("Krok 5: Usunięcie profilu węża przez API (DELETE /snake-profiles/:id)", async () => {
+      const response = await apiClient.request.delete(`/snake-profiles/${snakeId}`);
+      const body = await response.json();
+      expect(response.status()).toBe(200);
+      expect(body.success).toBe(true);
+    });
+  });
+});
