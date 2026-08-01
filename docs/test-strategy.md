@@ -45,7 +45,15 @@ UI E2E tests should cover:
 - Save feeding and see it in history.
 - Logout/login isolation between users.
 - Profile edit without accidental form clearing.
-- Responsive smoke for mobile viewport.
+### Performance Tests (Grafana k6)
+
+Performance tests should cover:
+
+- Peak load simulation (up to 20 concurrent virtual users / VUs).
+- Response time SLA threshold: 95% of API requests completed in < 500 ms (`p(95)<500`).
+- Error rate threshold: failed HTTP requests < 1% (`rate<0.01`).
+- Endpoint load coverage: `POST /calculate` and `GET /`.
+- Automated execution via `grafana/k6-action` in GitHub Actions CI.
 
 ## Smoke vs Regression
 

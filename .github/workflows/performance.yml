@@ -1,0 +1,50 @@
+name: Performance Tests (k6)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  performance:
+    name: k6 Load Testing
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: test
+      ALLOW_TEST_CLEANUP: "true"
+      API_BASE_URL: http://localhost:3000
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ADMIN_CLEANUP_SECRET: ${{ secrets.ADMIN_CLEANUP_SECRET }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm --prefix server ci
+
+      - name: Start backend server
+        run: |
+          npm run start:backend &
+          for i in {1..30}; do curl -s http://localhost:3000 && break || sleep 1; done
+
+      - name: Run k6 performance load tests
+        uses: grafana/k6-action@v0.5.0
+        with:
+          filename: tests/performance/k6-load-test.js
+        env:
+          API_BASE_URL: http://localhost:3000
