@@ -42,4 +42,13 @@ export class BaseApiClient {
       headers: this.headers(),
     });
   }
+
+  protected delete(
+    path: string,
+    extraHeaders?: Record<string, string>,
+  ): Promise<APIResponse> {
+    return this.request.delete(path, {
+      headers: this.headers(extraHeaders),
+    });
+  }
 }

@@ -37,18 +37,18 @@ test.describe("API - Pełny cykl CRUD i bezpieczeństwo operacji edycji i usuwan
       );
       const body = await response.json();
       expect(response.status()).toBe(201);
-      feedingId = body.feeding.id;
+      feedingId = String(body.feeding.id);
     });
 
-    await test.step("Krok 4: Usunięcie wpisu karmienia przez API", async () => {
-      const response = await apiClient.request.delete(`/feedings/${feedingId}`);
+    await test.step("Krok 4: Usunięcie wpisu karmienia przez API (DELETE /feedings/:id)", async () => {
+      const response = await apiClient.feedings.delete(feedingId);
       const body = await response.json();
       expect(response.status()).toBe(200);
       expect(body.success).toBe(true);
     });
 
     await test.step("Krok 5: Usunięcie profilu węża przez API (DELETE /snake-profiles/:id)", async () => {
-      const response = await apiClient.request.delete(`/snake-profiles/${snakeId}`);
+      const response = await apiClient.snakeProfiles.delete(snakeId);
       const body = await response.json();
       expect(response.status()).toBe(200);
       expect(body.success).toBe(true);

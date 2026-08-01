@@ -25,4 +25,8 @@ export class SnakeProfilesClient extends BaseApiClient {
   update(id: string, body: JsonBody) {
     return this.patch(`/snake-profiles/${id}`, body);
   }
+
+  delete(id: string) {
+    return this.delete(`/snake-profiles/${id}`);
+  }
 }

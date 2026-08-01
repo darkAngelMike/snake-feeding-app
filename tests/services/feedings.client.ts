@@ -20,4 +20,12 @@ export class FeedingsClient extends BaseApiClient {
   create(body: JsonBody, extraHeaders?: Record<string, string>) {
     return this.post("/feedings", body, extraHeaders);
   }
+
+  update(id: string, body: JsonBody) {
+    return this.patch(`/feedings/${id}`, body);
+  }
+
+  delete(id: string) {
+    return this.delete(`/feedings/${id}`);
+  }
 }
