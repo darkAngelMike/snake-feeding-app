@@ -2,8 +2,9 @@ import { test, expect } from "../../fixtures/test-fixtures";
 import { buildFeeding, buildQaUser } from "../../data/builders";
 import { createSnakeProfile } from "../../services/test-data.service";
 
-test.describe("API ownership and RLS regression", () => {
-  test("user B cannot read user A profile or create feeding for user A snake @regression @security", async ({
+// Testy izolacji danych użytkowników oraz weryfikacja zasad Row Level Security (RLS)
+test.describe("API - Izolacja danych i ochrona własności (RLS)", () => {
+  test("Użytkownik B nie ma dostępu do profilu ani historii karmień węża należącego do Użytkownika A @regression @security", async ({
     apiClient,
     authUser,
     authClient,
@@ -15,12 +16,12 @@ test.describe("API ownership and RLS regression", () => {
     void cleanup;
     let userAProfileId = "";
 
-    await test.step("Create profile owned by user A", async () => {
+    await test.step("Utworzenie profilu węża przypisanego do Użytkownika A", async () => {
       const userAProfile = await createSnakeProfile(apiClient.snakeProfiles);
       userAProfileId = userAProfile.id;
     });
 
-    const userB = await test.step("Create and authenticate user B", async () => {
+    const userB = await test.step("Rejestracja i zalogowanie drugiego użytkownika (Użytkownik B)", async () => {
       const user = buildQaUser(testRunId);
       const session = await authClient.createUserAndLogin(user);
 
@@ -30,7 +31,7 @@ test.describe("API ownership and RLS regression", () => {
       };
     });
 
-    await test.step("Verify user B cannot read user A profile", async () => {
+    await test.step("Weryfikacja odrzucenia próby odczytu profilu Użytkownika A przez Użytkownika B (status 403)", async () => {
       const profileResponse = await userB.profiles.getById(userAProfileId);
       const profileBody = await profileResponse.json();
 
@@ -38,7 +39,7 @@ test.describe("API ownership and RLS regression", () => {
       expect(profileBody.error).toEqual(expect.any(String));
     });
 
-    await test.step("Verify user B cannot create feeding for user A snake", async () => {
+    await test.step("Weryfikacja odrzucenia próby dodania karmienia dla węża Użytkownika A przez Użytkownika B (status 403)", async () => {
       const feedingResponse = await userB.feedings.create(
         buildFeeding({ snake_id: userAProfileId }),
       );
@@ -48,7 +49,7 @@ test.describe("API ownership and RLS regression", () => {
       expect(feedingBody.error).toEqual(expect.any(String));
     });
 
-    await test.step("Verify spoofed user and role headers are ignored", async () => {
+    await test.step("Weryfikacja ignorowania próby podszycia się za pomocą nagłówków X-User-Id oraz X-Role (status 403)", async () => {
       const spoofedProfileResponse = await userB.profiles.getById(
         userAProfileId,
         {

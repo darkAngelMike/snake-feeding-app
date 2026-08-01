@@ -5,13 +5,14 @@ import { FeedingFormPage } from "../../pages/feeding-form.page";
 import { HistoryPage } from "../../pages/history.page";
 import { authenticatePageWithSupabase } from "../../services/auth.client";
 
-test.describe("UI dashboard and feeding regression", () => {
-  test("saving feeding updates UI and keeps weight status visible @regression", async ({
+// Testy regresyjne zachowania interfejsu pulpitu oraz formularza karmień
+test.describe("UI E2E - Pulpit i rejestracja karmienia (Regresja)", () => {
+  test("Zapisanie karmienia aktualizuje interfejs i utrzymuje widoczny status wagi @regression", async ({
     authUser,
     page,
     testProfile,
   }) => {
-    await test.step("Authenticate browser context through Supabase session", async () => {
+    await test.step("Krok 1: Autentykacja w przeglądarce i otwarcie pulpitu", async () => {
       await authenticatePageWithSupabase(page, authUser.session);
       await page.goto("/");
     });
@@ -20,12 +21,12 @@ test.describe("UI dashboard and feeding regression", () => {
     const feedingFormPage = new FeedingFormPage(page);
     const historyPage = new HistoryPage(page);
 
-    await test.step("Verify dashboard and weight status are visible", async () => {
+    await test.step("Krok 2: Weryfikacja widoczności profilu oraz karty statusu masy ciała na pulpicie", async () => {
       await dashboardPage.expectLoaded(testProfile.name);
       await expect(page.getByTestId("dashboard-status-weight")).toBeVisible();
     });
 
-    const feeding = await test.step("Save feeding from UI", async () => {
+    const feeding = await test.step("Krok 3: Rejestracja nowego karmienia z poziomu formularza UI", async () => {
       await feedingFormPage.open();
       const feedingData = buildFeeding({ snake_id: testProfile.id });
 
@@ -42,12 +43,12 @@ test.describe("UI dashboard and feeding regression", () => {
       return feedingData;
     });
 
-    await test.step("Verify saved feeding is visible in history", async () => {
+    await test.step("Krok 4: Przejście do historii i weryfikacja widoczności zapisanego posiłku", async () => {
       await feedingFormPage.openHistory();
       await historyPage.expectFeedingVisible(feeding.meal_weight_g);
     });
 
-    await test.step("Return to dashboard and verify weight status remains visible", async () => {
+    await test.step("Krok 5: Powrót na pulpit i upewnienie się, że status wagi pozostał poprawnie odświeżony", async () => {
       await page.getByRole("button", { name: "Przegląd" }).click();
       await expect(page.getByTestId("dashboard-status-weight")).toBeVisible();
     });

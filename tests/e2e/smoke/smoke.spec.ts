@@ -5,13 +5,14 @@ import { FeedingFormPage } from "../../pages/feeding-form.page";
 import { HistoryPage } from "../../pages/history.page";
 import { authenticatePageWithSupabase } from "../../services/auth.client";
 
-test.describe("UI E2E smoke", () => {
-  test("authenticated user can calculate, save feeding and see history @smoke", async ({
+// Testy E2E interfejsu użytkownika w przeglądarce (Ścieżka Krytyczna)
+test.describe("UI E2E - Przeglądarkowe testy dymne (Smoke)", () => {
+  test("Zalogowany opiekun może obliczyć termin, zarejestrować karmienie i zobaczyć wpis w historii @smoke", async ({
     authUser,
     page,
     testProfile,
   }) => {
-    await test.step("Authenticate browser context through Supabase session", async () => {
+    await test.step("Krok 1: Logowanie użytkownika w kontekście przeglądarki przez sesję Supabase", async () => {
       await authenticatePageWithSupabase(page, authUser.session);
       await page.goto("/");
     });
@@ -20,17 +21,17 @@ test.describe("UI E2E smoke", () => {
     const feedingFormPage = new FeedingFormPage(page);
     const historyPage = new HistoryPage(page);
 
-    await test.step("Verify dashboard loaded for API-created profile", async () => {
+    await test.step("Krok 2: Weryfikacja załadowania pulpitu z imieniem węża utworzonego w bazie", async () => {
       await dashboardPage.expectLoaded(testProfile.name);
     });
 
-    await test.step("Calculate feeding and verify result", async () => {
+    await test.step("Krok 3: Wyliczenie rekomendacji żywieniowej i weryfikacja wyświetlenia sugerowanej daty", async () => {
       await dashboardPage.calculateFeeding();
       await dashboardPage.expectNextFeedingDateVisible();
       await dashboardPage.expectTimingBadgeVisible();
     });
 
-    await test.step("Save feeding from UI", async () => {
+    await test.step("Krok 4: Wypełnienie i zapisanie formularza nowego karmienia w interfejsie", async () => {
       await feedingFormPage.open();
       const feeding = buildFeeding({ snake_id: testProfile.id });
 
@@ -42,7 +43,7 @@ test.describe("UI E2E smoke", () => {
       await feedingFormPage.openHistory();
     });
 
-    await test.step("Verify saved feeding is visible in history", async () => {
+    await test.step("Krok 5: Weryfikacja obecności nowego karmienia na osi czasu w historii", async () => {
       await historyPage.expectFeedingVisible(100);
     });
   });

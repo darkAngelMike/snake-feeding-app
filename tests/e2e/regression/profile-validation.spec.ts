@@ -2,8 +2,9 @@ import { test, expect } from "../../fixtures/test-fixtures";
 import { buildSnakeProfile } from "../../data/builders";
 import { authenticatePageWithSupabase } from "../../services/auth.client";
 
-test.describe("UI profile validation regression", () => {
-  test("profile form shows only missing fields and validates weight range @regression", async ({
+// Testy regresyjne walidacji komórek formularza profilu węża
+test.describe("UI E2E - Walidacja formularza profilu węża (Regresja)", () => {
+  test("Formularz profilu wskazuje tylko brakujące pola oraz weryfikuje dopuszczalny zakres wagi (50-5000 g) @regression", async ({
     authUser,
     cleanup,
     page,
@@ -11,12 +12,12 @@ test.describe("UI profile validation regression", () => {
     void cleanup;
     const profile = buildSnakeProfile();
 
-    await test.step("Authenticate browser context and open profile form", async () => {
+    await test.step("Krok 1: Autentykacja użytkownika i przejście do formularza profilu", async () => {
       await authenticatePageWithSupabase(page, authUser.session);
       await page.goto("/");
     });
 
-    await test.step("Submitting an empty form lists all missing profile fields", async () => {
+    await test.step("Krok 2: Próba zapisu pustego formularza wypisuje wszystkie brakujące pola profilu", async () => {
       await page.getByTestId("profile-button-save").click();
       await expect(
         page.getByText(
@@ -25,7 +26,7 @@ test.describe("UI profile validation regression", () => {
       ).toBeVisible();
     });
 
-    await test.step("Submitting with only condition missing lists only condition", async () => {
+    await test.step("Krok 3: Wypełnienie części pól wskazuje precyzyjnie tylko brakującą kondycję", async () => {
       await page.getByTestId("profile-input-name").fill(profile.name);
       await page
         .getByTestId("profile-input-weight")
@@ -38,7 +39,7 @@ test.describe("UI profile validation regression", () => {
       await expect(page.getByText("Wybierz kondycję węża.")).toBeVisible();
     });
 
-    await test.step("Weight below 50 g is rejected", async () => {
+    await test.step("Krok 4: Weryfikacja odrzucenia wagi poniżej 50 g przez komunikat błędu", async () => {
       await page.getByTestId("profile-select-condition").selectOption("normal");
       await page.getByTestId("profile-input-weight").fill("20");
       await page.getByTestId("profile-button-save").click();
@@ -46,7 +47,7 @@ test.describe("UI profile validation regression", () => {
       await expect(page.getByText("Waga jest zbyt niska")).toBeVisible();
     });
 
-    await test.step("Weight above 5000 g is rejected", async () => {
+    await test.step("Krok 5: Weryfikacja odrzucenia wagi powyżej 5000 g przez komunikat błędu", async () => {
       await page.getByTestId("profile-input-weight").fill("5001");
       await page.getByTestId("profile-button-save").click();
 

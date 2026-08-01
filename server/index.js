@@ -32,11 +32,15 @@ app.use(
   }),
 );
 
-const allowedOrigins = [
+const defaultOrigins = [
   "https://snake-feeding-app.vercel.app",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 ];
+const envOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+  : [];
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 
 app.use(
   cors({

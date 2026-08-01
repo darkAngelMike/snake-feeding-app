@@ -24,3 +24,4 @@ test-results/
 burpsuite.sh
 download?product=community
 wget-log
+.aider*

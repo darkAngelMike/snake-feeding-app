@@ -9,25 +9,26 @@ import {
   createSnakeProfile,
 } from "../../services/test-data.service";
 
-test.describe("API auth and validation regression", () => {
-  test("protected resources reject missing token with 401 @regression @security", async ({
+// Testy regresyjne autoryzacji oraz walidacji pól danych wejściowych API
+test.describe("API - Walidacja i autoryzacja (Regresja)", () => {
+  test("Chronione zasoby odrzucają żądania bez tokena autoryzacji (status 401) @regression @security", async ({
     calculationsClient,
     feedingsClient,
     snakeProfilesClient,
   }) => {
-    await test.step("Verify snake profiles require authentication", async () => {
+    await test.step("Weryfikacja wymogu autoryzacji dla listy profili węży", async () => {
       const profileResponse = await snakeProfilesClient.list();
       expect(profileResponse.status()).toBe(401);
     });
 
-    await test.step("Verify calculation requires authentication", async () => {
+    await test.step("Weryfikacja wymogu autoryzacji dla kalkulatora karmienia", async () => {
       const calculateResponse = await calculationsClient.calculate(
         buildCalculationInput("not-owned-snake-id"),
       );
       expect(calculateResponse.status()).toBe(401);
     });
 
-    await test.step("Verify feeding history requires authentication", async () => {
+    await test.step("Weryfikacja wymogu autoryzacji dla historii karmień", async () => {
       const feedingsResponse = await feedingsClient.listBySnakeId(
         "not-owned-snake-id",
       );
@@ -35,13 +36,13 @@ test.describe("API auth and validation regression", () => {
     });
   });
 
-  test("profile validation returns 400 for missing fields and invalid weight @regression @security", async ({
+  test("Formularz profilu odrzuca brakujące pola oraz nieprawidłową wagę węża (status 400) @regression @security", async ({
     apiClient,
     cleanup,
   }) => {
     void cleanup;
 
-    await test.step("Reject profile creation with missing required fields", async () => {
+    await test.step("Odrzucenie tworzenia profilu przy braku wymaganych pól", async () => {
       const missingResponse = await apiClient.snakeProfiles.create({});
       const missingBody = await missingResponse.json();
 
@@ -49,7 +50,7 @@ test.describe("API auth and validation regression", () => {
       expect(missingBody.details).toEqual(expect.any(Array));
     });
 
-    await test.step("Reject profile creation with invalid weight", async () => {
+    await test.step("Odrzucenie tworzenia profilu przy wadze poniżej dopuszczalnego progu 50g", async () => {
       const invalidWeightResponse = await apiClient.snakeProfiles.create(
         buildSnakeProfile({ current_weight_g: 20 }),
       );
@@ -60,23 +61,23 @@ test.describe("API auth and validation regression", () => {
     });
   });
 
-  test("calculate returns 200 for valid data and 400 for missing data @regression @security", async ({
+  test("Kalkulator żywieniowy zwraca 200 dla poprawnych danych i 400 przy braku danych @regression @security", async ({
     apiClient,
     cleanup,
   }) => {
     void cleanup;
     let profileId = "";
 
-    await test.step("Create profile for calculation regression", async () => {
+    await test.step("Utworzenie profilu bazowego do testu kalkulacji", async () => {
       const profile = await createSnakeProfile(apiClient.snakeProfiles);
       profileId = profile.id;
     });
 
-    await test.step("Calculate feeding for valid profile data", async () => {
+    await test.step("Wyliczenie optymalnego posiłku dla poprawnych danych węża", async () => {
       await calculateFeeding(apiClient.calculations, profileId);
     });
 
-    await test.step("Reject calculation with missing data", async () => {
+    await test.step("Odrzucenie kalkulacji przy pustym korpusie żądania", async () => {
       const invalidResponse = await apiClient.calculations.calculate({});
       const invalidBody = await invalidResponse.json();
 
@@ -85,19 +86,19 @@ test.describe("API auth and validation regression", () => {
     });
   });
 
-  test("feeding supports success and refused statuses @regression", async ({
+  test("Zapis karmienia obsługuje statusy zjedzonego oraz odrzuconego posiłku @regression", async ({
     apiClient,
     cleanup,
   }) => {
     void cleanup;
     let profileId = "";
 
-    await test.step("Create profile for feeding status regression", async () => {
+    await test.step("Utworzenie profilu węża do rejestracji karmień", async () => {
       const profile = await createSnakeProfile(apiClient.snakeProfiles);
       profileId = profile.id;
     });
 
-    await test.step("Save successful feeding status", async () => {
+    await test.step("Zapisanie udanego karmienia (status: success)", async () => {
       const successResponse = await apiClient.feedings.create(
         buildFeeding({ snake_id: profileId, status: "success" }),
       );
@@ -108,7 +109,7 @@ test.describe("API auth and validation regression", () => {
       expect(successBody.feeding.status).toBe("success");
     });
 
-    await test.step("Save refused feeding status", async () => {
+    await test.step("Zapisanie odmowy przyjęcia pokarmu (status: refused)", async () => {
       const refusedResponse = await apiClient.feedings.create(
         buildFeeding({ snake_id: profileId, status: "refused" }),
       );
