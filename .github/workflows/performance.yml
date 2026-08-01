@@ -49,3 +49,5 @@ jobs:
         run: k6 run tests/performance/k6-load-test.js
         env:
           API_BASE_URL: http://localhost:3000
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}

@@ -1,11 +1,11 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 
-// Opcje konfiguracji obciążenia (Scenariusz Ramping VUs)
+// Opcje konfiguracji obciążenia k6
 export const options = {
   stages: [
-    { duration: "10s", target: 5 },  // Wzrost obciążenia do 5 użytkowników
-    { duration: "20s", target: 20 }, // Szczytowe obciążenie 20 jednoczesnych hodowców
+    { duration: "10s", target: 5 },  // Wzrost obciążenia do 5 wirtualnych użytkowników
+    { duration: "20s", target: 20 }, // Szczytowe obciążenie 20 użytkowników
     { duration: "10s", target: 0 },  // Stopniowe wygaszanie
   ],
   thresholds: {
@@ -18,10 +18,45 @@ export const options = {
 
 const BASE_URL = __ENV.API_BASE_URL || "http://localhost:3000";
 
-export default function () {
+// Funkcja setup() wykonuje się JEDEN raz przed rozpoczęciem testu obciążeniowego
+export function setup() {
+  const supabaseUrl = __ENV.SUPABASE_URL;
+  const anonKey = __ENV.SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !anonKey) {
+    return { token: null };
+  }
+
+  const email = `qa_k6_${Date.now()}@snake.local`;
+  const password = "K6-Test-Password123!";
+
+  const res = http.post(
+    `${supabaseUrl}/auth/v1/signup`,
+    JSON.stringify({ email, password }),
+    {
+      headers: {
+        "Content-Type": "application/json",
+        apikey: anonKey,
+      },
+    },
+  );
+
+  try {
+    const data = JSON.parse(res.body);
+    return { token: data.access_token || null };
+  } catch (e) {
+    return { token: null };
+  }
+}
+
+export default function (data) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(data && data.token ? { Authorization: `Bearer ${data.token}` } : {}),
+  };
+
   // Scenariusz 1: Kalkulacja żywieniowa dla pytona królewskiego (POST /calculate)
   const calculatePayload = JSON.stringify({
-    snake_id: "k6-test-snake-uuid",
     last_successful_feeding_date: "2026-04-01",
     weight_g: 1200,
     life_stage: "adult",
@@ -31,16 +66,10 @@ export default function () {
     last_meal_weight_g: 100,
   });
 
-  const calculateParams = {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  };
-
   const calculateRes = http.post(
     `${BASE_URL}/calculate`,
     calculatePayload,
-    calculateParams,
+    { headers },
   );
 
   check(calculateRes, {
@@ -57,7 +86,7 @@ export default function () {
 
   sleep(1);
 
-  // Scenariusz 2: Pobranie struktury i statusu serwera (GET /)
+  // Scenariusz 2: Pobranie strony głównej i sprawdzenie przepustowości (GET /)
   const rootRes = http.get(`${BASE_URL}/`);
 
   check(rootRes, {
