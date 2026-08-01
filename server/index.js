@@ -55,6 +55,15 @@ app.use(
 
 app.use(express.json());
 
+app.get("/api-docs.json", (_req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader(
+    "Content-Disposition",
+    'attachment; filename="snake-feeding-api.json"',
+  );
+  res.send(swaggerSpec);
+});
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get("/", (_req, res) => {

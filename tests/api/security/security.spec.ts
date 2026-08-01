@@ -28,6 +28,24 @@ test.describe("API - Testy bezpieczeństwa", () => {
     });
   });
 
+  test("Udostępnia surowy plik JSON specyfikacji OpenAPI do pobrania dla Postmana @security", async ({
+    request,
+  }) => {
+    await allure.story("Pobieranie surowej specyfikacji OpenAPI JSON");
+
+    await test.step("Weryfikacja pobierania pliku snake-feeding-api.json (status 200 OK)", async () => {
+      const response = await request.get("/api-docs.json");
+      expect(response.status()).toBe(200);
+
+      const disposition = response.headers()["content-disposition"] || "";
+      expect(disposition).toContain('attachment; filename="snake-feeding-api.json"');
+
+      const body = await response.json();
+      expect(body.openapi).toBe("3.0.0");
+      expect(body.info.title).toBe("Snake Feeding API");
+    });
+  });
+
   test("Blokuje wyliczenie karmienia z datą z przyszłości (walidacja reguły biznesowej) @security", async ({
     apiClient,
     cleanup,

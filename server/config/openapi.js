@@ -7,7 +7,8 @@ const options = {
     info: {
       title: "Snake Feeding API",
       version: "1.0.0",
-      description: "API for snake feeding tracking and recommendations",
+      description:
+        "API for snake feeding tracking and recommendations.\n\n💾 **Postman Collection**: [Pobierz plik specyfikacji (.json) do Postmana](/api-docs.json)",
     },
     servers: [
       { url: "http://localhost:3000", description: "Środowisko Lokalne" },
