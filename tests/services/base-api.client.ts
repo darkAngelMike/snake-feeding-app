@@ -43,7 +43,7 @@ export class BaseApiClient {
     });
   }
 
-  protected delete(
+  protected remove(
     path: string,
     extraHeaders?: Record<string, string>,
   ): Promise<APIResponse> {

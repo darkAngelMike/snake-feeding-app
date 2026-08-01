@@ -27,6 +27,6 @@ export class SnakeProfilesClient extends BaseApiClient {
   }
 
   delete(id: string) {
-    return this.delete(`/snake-profiles/${id}`);
+    return this.remove(`/snake-profiles/${id}`);
   }
 }

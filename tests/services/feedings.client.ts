@@ -26,6 +26,6 @@ export class FeedingsClient extends BaseApiClient {
   }
 
   delete(id: string) {
-    return this.delete(`/feedings/${id}`);
+    return this.remove(`/feedings/${id}`);
   }
 }
