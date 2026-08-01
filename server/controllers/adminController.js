@@ -48,7 +48,7 @@ function getCleanupEmailPrefix(req) {
 
 function isAllowedTestEmailPrefix(prefix) {
   return (
-    prefix.length >= 6 &&
+    prefix.length >= 3 &&
     TEST_EMAIL_PREFIXES.some((allowedPrefix) => prefix.startsWith(allowedPrefix))
   );
 }
