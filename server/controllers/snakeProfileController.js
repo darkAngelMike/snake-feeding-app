@@ -1,4 +1,5 @@
 const snakeProfilesRepository = require("../repositories/snakeProfilesRepository");
+const feedingsRepository = require("../repositories/feedingsRepository");
 const logger = require("../utils/logger");
 const { isPermissionError } = require("../utils/supabaseErrors");
 

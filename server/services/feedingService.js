@@ -39,7 +39,11 @@ function calculateFeeding(data) {
   const mealRange = getMealPercentRange(input.lifeStage, input.bodyCondition);
   const intervalRange = INTERVAL_RANGES[input.lifeStage];
   const mealPercentTarget = getMealPercentTarget(mealRange, input.bodyCondition);
-  const feedingIntervalDays = getFeedingInterval(intervalRange, input.bodyCondition);
+  let feedingIntervalDays = getFeedingInterval(intervalRange, input.bodyCondition);
+
+  if (input.isShedding) {
+    feedingIntervalDays += 5;
+  }
 
   const mealWeightMin = Math.round(input.weightG * mealRange.min);
   const mealWeightMax = Math.round(input.weightG * mealRange.max);
@@ -53,6 +57,12 @@ function calculateFeeding(data) {
       "Rekomendowana karmówka przekracza 15% masy ciała. Zweryfikuj etap życia, masę i kondycję węża.",
     );
   }
+
+  const daysOverdue = timing.daysLeft < 0 ? Math.abs(timing.daysLeft) : 0;
+  const isOverdue = daysOverdue > 0;
+  const overdueNotice = isOverdue
+    ? `Wymagane natychmiastowe karmienie! Optymalny termin upłynął ${formatDate(nextFeedingDate)} (${daysOverdue} dni temu).`
+    : null;
 
   return {
     message: "Obliczono plan karmienia pytona królewskiego",
@@ -75,7 +85,9 @@ function calculateFeeding(data) {
       warnings,
       disclaimer: DISCLAIMER,
       daysLeft: Math.max(0, timing.daysLeft),
-      daysOverdue: timing.daysLeft < 0 ? Math.abs(timing.daysLeft) : 0,
+      daysOverdue,
+      isOverdue,
+      overdueNotice,
     },
   };
 }

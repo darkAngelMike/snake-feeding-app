@@ -46,6 +46,11 @@ function validateFeedingPayload(payload, userId) {
   if (!payload.snake_id) errors.push("snake_id jest wymagane");
   if (!isValidDateOnly(payload.feeding_date)) {
     errors.push("feeding_date musi mieć format YYYY-MM-DD i być poprawną datą");
+  } else {
+    const today = new Date().toISOString().slice(0, 10);
+    if (payload.feeding_date > today) {
+      errors.push("feeding_date nie może być w przyszłości");
+    }
   }
   if (!snakeWeightG) {
     errors.push("snake_weight_g musi być dodatnią liczbą całkowitą");
@@ -211,47 +216,55 @@ async function getFeedings(req, res) {
   });
 }
 
-async function updateSnakeProfileAfterFeeding(feeding) {
-  const weightUpdate = await snakeProfilesRepository.updateWeight(
-    feeding.snake_id,
-    feeding.snake_weight_g,
-    feeding.supabaseClient,
+async function syncSnakeProfileFromFeedings(snakeId, supabaseClient) {
+  const { data: feedings, error } = await feedingsRepository.getBySnakeId(
+    snakeId,
+    supabaseClient,
   );
 
-  if (weightUpdate.error) {
-    logger.error("Nie udało się zaktualizować wagi profilu po karmieniu", {
-      error: weightUpdate.error,
-      snake_id: feeding.snake_id,
-      feeding_date: feeding.feeding_date,
-      snake_weight_g: feeding.snake_weight_g,
+  if (error || !feedings) {
+    logger.error("Nie udało się pobrać karmień do synchronizacji profilu", {
+      error,
+      snakeId,
     });
     return false;
   }
 
-  if (feeding.status !== "success") {
+  const successfulFeedings = (feedings || [])
+    .filter((f) => f.status === "success")
+    .sort((a, b) => (a.feeding_date < b.feeding_date ? 1 : -1));
+
+  if (successfulFeedings.length === 0) {
     return true;
   }
 
-  const lastFeedingUpdate =
-    await snakeProfilesRepository.updateLastFeedingDate(
-      feeding.snake_id,
-      feeding.feeding_date,
-      feeding.supabaseClient,
-    );
+  const latest = successfulFeedings[0];
 
-  if (lastFeedingUpdate.error) {
-    logger.error(
-      "Nie udało się zaktualizować daty ostatniego udanego karmienia",
-      {
-        error: lastFeedingUpdate.error,
-        snake_id: feeding.snake_id,
-        feeding_date: feeding.feeding_date,
-      },
-    );
+  const { error: updateError } = await snakeProfilesRepository.updateProfile(
+    snakeId,
+    {
+      current_weight_g: latest.snake_weight_g,
+      last_successful_feeding_date: latest.feeding_date,
+    },
+    supabaseClient,
+  );
+
+  if (updateError) {
+    logger.error("Nie udało się zaktualizować profilu z najnowszego karmienia", {
+      error: updateError,
+      snakeId,
+    });
     return false;
   }
 
   return true;
+}
+
+async function updateSnakeProfileAfterFeeding(feeding) {
+  return syncSnakeProfileFromFeedings(
+    feeding.snake_id,
+    feeding.supabaseClient,
+  );
 }
 
 async function createFeeding(req, res) {
@@ -345,6 +358,8 @@ async function deleteFeeding(req, res) {
     });
   }
 
+  await syncSnakeProfileFromFeedings(feeding.snake_id, req.supabase);
+
   return res.json({
     success: true,
     message: "Wpis karmienia został usunięty",
@@ -432,6 +447,8 @@ async function updateFeeding(req, res) {
         : "Nie udało się zaktualizować wpisu karmienia",
     });
   }
+
+  await syncSnakeProfileFromFeedings(existingFeeding.snake_id, req.supabase);
 
   return res.json({
     success: true,

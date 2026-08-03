@@ -1,6 +1,7 @@
 const { calculateFeeding } = require("../services/feedingService");
 const feedingCalculationsRepository = require("../repositories/feedingCalculationsRepository");
 const snakeProfilesRepository = require("../repositories/snakeProfilesRepository");
+const feedingsRepository = require("../repositories/feedingsRepository");
 const logger = require("../utils/logger");
 const { isPermissionError } = require("../utils/supabaseErrors");
 
@@ -17,6 +18,25 @@ async function calculate(req, res) {
       ...req.body,
       user_id: userId,
     };
+
+    if (payload.snake_id && payload.refused_meals_count === undefined) {
+      const { data: feedings } = await feedingsRepository.getBySnakeId(
+        payload.snake_id,
+        req.supabase,
+      );
+      if (feedings && feedings.length > 0) {
+        let count = 0;
+        for (const item of feedings) {
+          if (item.status === "refused") {
+            count++;
+          } else {
+            break;
+          }
+        }
+        payload.refused_meals_count = count;
+      }
+    }
+
     const calculation = calculateFeeding(payload);
     const responseBody = { ...calculation };
 

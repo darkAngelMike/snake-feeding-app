@@ -131,6 +131,12 @@ export function Dashboard({
 
           {result ? (
             <>
+              {result.overdueNotice && (
+                <div className="message message--error" style={{ marginBottom: "16px" }}>
+                  <strong>🔴 ZALEGŁE KARMIENIE</strong>
+                  <p style={{ margin: "4px 0 0" }}>{result.overdueNotice}</p>
+                </div>
+              )}
               <div className="feeding-result">
                 <div>
                   <span>Najbliższa data</span>

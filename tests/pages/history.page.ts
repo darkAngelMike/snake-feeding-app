@@ -10,6 +10,6 @@ export class HistoryPage {
   }
 
   async expectFeedingVisible(mealWeightG: number) {
-    await expect(this.page.getByText(`${mealWeightG} g pokarmu`)).toBeVisible();
+    await expect(this.page.getByText(`${mealWeightG} g pokarmu`).first()).toBeVisible();
   }
 }
